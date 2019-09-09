@@ -1,0 +1,135 @@
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\obj\Debug\ResolveAssemblyReference.cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\obj\Debug\WPM.FMain.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\obj\Debug\WPM.Properties.Resources.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\bin\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\bin\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\bin\Debug\System.Data.SqlClient.dll
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\obj\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM dev\WPM\obj\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\bin\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\bin\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\bin\Debug\System.Data.SqlClient.dll
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\obj\Debug\ResolveAssemblyReference.cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\obj\Debug\WPM.FMain.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\obj\Debug\WPM.Properties.Resources.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\obj\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.40\WPM\obj\Debug\WPM.pdb
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\bin\Debug\WPM.exe
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\bin\Debug\WPM.pdb
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\bin\Debug\System.Data.SqlClient.dll
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\obj\Debug\WPM.FMain.resources
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\obj\Debug\WPM.Properties.Resources.resources
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\obj\Debug\WPM.exe
+C:\Users\nikolaev\Downloads\WPM 4.40\WPM\obj\Debug\WPM.pdb
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\bin\Debug\WPM.exe
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\bin\Debug\WPM.pdb
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\bin\Debug\System.Data.SqlClient.dll
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\obj\Debug\WPM.FMain.resources
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\obj\Debug\WPM.Properties.Resources.resources
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\obj\Debug\WPM.exe
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.40\WPM\obj\Debug\WPM.pdb
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\bin\Debug\WPM.exe
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\bin\Debug\WPM.pdb
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\bin\Debug\System.Data.SqlClient.dll
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\obj\Debug\WPM.FMain.resources
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\obj\Debug\WPM.Properties.Resources.resources
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\obj\Debug\WPM.exe
+C:\Users\nikolaev\Desktop\Облако\Cloud Mail.Ru\WPM 4.41\WPM\obj\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\bin\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\bin\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\bin\Debug\System.Data.SqlClient.dll
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\obj\Debug\ResolveAssemblyReference.cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\obj\Debug\WPM.FMain.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\obj\Debug\WPM.Properties.Resources.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\obj\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.43\WPM\obj\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\bin\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\bin\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\bin\Debug\System.Data.SqlClient.dll
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\obj\Debug\ResolveAssemblyReference.cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\obj\Debug\WPM.FMain.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\obj\Debug\WPM.Properties.Resources.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\obj\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.44\WPM\obj\Debug\WPM.pdb
+D:\Конфигурации\WPM 4.44\WPM\bin\Debug\WPM.exe
+D:\Конфигурации\WPM 4.44\WPM\bin\Debug\WPM.pdb
+D:\Конфигурации\WPM 4.44\WPM\bin\Debug\System.Data.SqlClient.dll
+D:\Конфигурации\WPM 4.44\WPM\obj\Debug\ResolveAssemblyReference.cache
+D:\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.FMain.resources
+D:\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.Properties.Resources.resources
+D:\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+D:\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.exe
+D:\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.pdb
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\bin\Debug\WPM.exe
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\bin\Debug\WPM.pdb
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\bin\Debug\System.Data.SqlClient.dll
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\obj\Debug\ResolveAssemblyReference.cache
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.FMain.resources
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.Properties.Resources.resources
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.exe
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.44\WPM\obj\Debug\WPM.pdb
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\bin\Debug\WPM.exe
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\bin\Debug\WPM.pdb
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\bin\Debug\System.Data.SqlClient.dll
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\obj\Debug\ResolveAssemblyReference.cache
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\obj\Debug\WPM.FMain.resources
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\obj\Debug\WPM.Properties.Resources.resources
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\obj\Debug\WPM.exe
+W:\СашиныНаработки(Мои)\Конфигурации\WPM 4.45\WPM\obj\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\bin\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\bin\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\bin\Debug\System.Data.SqlClient.dll
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\obj\Debug\ResolveAssemblyReference.cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\obj\Debug\WPM.FMain.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\obj\Debug\WPM.Properties.Resources.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\obj\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.45\WPM\obj\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\bin\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\bin\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\bin\Debug\System.Data.SqlClient.dll
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\obj\Debug\ResolveAssemblyReference.cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\obj\Debug\WPM.FMain.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\obj\Debug\WPM.Properties.Resources.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\bin\Debug\WPM.exe
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\bin\Debug\WPM.pdb
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\bin\Debug\System.Data.SqlClient.dll
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\obj\Debug\WPM.FMain.resources
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\obj\Debug\WPM.Properties.Resources.resources
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
+C:\Documents and Settings\perov\Рабочий стол\Временная\WPM\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.pdb
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\System.Data.SqlClient.dll
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\ResolveAssemblyReference.cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.FMain.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.Properties.Resources.resources
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
+T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.exe
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.pdb
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\System.Data.SqlClient.dll
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.FMain.resources
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.Properties.Resources.resources
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
+C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb

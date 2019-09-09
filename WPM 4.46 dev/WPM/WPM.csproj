@@ -1,0 +1,186 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{14657DD7-C581-4797-8502-3D268E63F3D1}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>WPM</RootNamespace>
+    <AssemblyName>WPM</AssemblyName>
+    <ProjectTypeGuids>{4D628B5B-2FBC-4AA6-8C16-197242AEB884};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <PlatformFamilyName>WindowsCE</PlatformFamilyName>
+    <PlatformID>E2BECB1F-8C8C-41ba-B736-9BE7D946A398</PlatformID>
+    <OSVersion>5.0</OSVersion>
+    <DeployDirSuffix>Application\WPM</DeployDirSuffix>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <NativePlatformName>Windows CE</NativePlatformName>
+    <FormFactorID>
+    </FormFactorID>
+    <DeployDirPrefix>\</DeployDirPrefix>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;$(PlatformFamilyName)</DefineConstants>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <ErrorReport>prompt</ErrorReport>
+    <FileAlignment>512</FileAlignment>
+    <WarningLevel>4</WarningLevel>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;$(PlatformFamilyName)</DefineConstants>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <ErrorReport>prompt</ErrorReport>
+    <FileAlignment>512</FileAlignment>
+    <WarningLevel>4</WarningLevel>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.SqlClient, Version=3.0.3600.0, Culture=neutral, PublicKeyToken=3be235df1c8d2ad3, processorArchitecture=MSIL" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Model\Model_SampleSetCorrect.cs" />
+    <Compile Include="Model\Model_SampleSet.cs" />
+    <Compile Include="NewStruct\ChoiseWork\ChoiseWorkSample.cs" />
+    <Compile Include="EventArgs\ABaseModeEventArgs.cs" />
+    <Compile Include="EventArgs\ReportEventArgs.cs" />
+    <Compile Include="EventArgs\UpdateEventArgs.cs" />
+    <Compile Include="Exeptions\TransportExcception.cs" />
+    <Compile Include="FMain_debug.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FMain_fonts.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FMain_views.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Global.cs" />
+    <Compile Include="Helpers\APIManager.cs" />
+    <Compile Include="Helpers\DeviceID.cs" />
+    <Compile Include="Helpers\Helper.cs" />
+    <Compile Include="Helpers\Translation.cs" />
+    <Compile Include="Barcode\Barcode.cs" />
+    <Compile Include="Barcode\BarcodeReadEventArgs.cs" />
+    <Compile Include="EventArgs\ChangeModeEventArgs.cs" />
+    <Compile Include="EventArgs\ReactionSCEventArgs.cs" />
+    <Compile Include="EventArgs\ResponseEventArgs.cs" />
+    <Compile Include="FMain_base.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FMain_base.Designer.cs">
+      <DependentUpon>FMain_base.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FMain_ReView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FMain_view.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Model\Model_adapter.cs" />
+    <Compile Include="Model\Model_newStruct.cs" />
+    <Compile Include="Model\Model_primordial.cs" />
+    <Compile Include="Model\Model_set.cs" />
+    <Compile Include="Model\Model_setComplete.cs" />
+    <Compile Include="Model\Model_SetSelfControl.cs" />
+    <Compile Include="Model\Model_setInicialization.cs" />
+    <Compile Include="Model\Model_switcher.cs" />
+    <Compile Include="NewStruct\ABaseMode.cs" />
+    <Compile Include="Model\Model_setCorrect.cs" />
+    <Compile Include="NewStruct\ABaseStandart.cs" />
+    <Compile Include="NewStruct\Acceptance\ItemCard.cs" />
+    <Compile Include="NewStruct\ChoiseWork\ChoiseWork.cs" />
+    <Compile Include="NewStruct\ChoiseWork\ChoiseWorkShipping.cs" />
+    <Compile Include="NewStruct\ChoiseWork\ChoiseWorkSupply.cs" />
+    <Compile Include="NewStruct\ChoiseWork\ChoiseWorkAddressCard.cs" />
+    <Compile Include="NewStruct\ControlCollect\ControlCollect.cs" />
+    <Compile Include="NewStruct\Loader-Refill\Loader.cs" />
+    <Compile Include="NewStruct\Loader-Refill\LoaderChoise.cs" />
+    <Compile Include="NewStruct\Loader-Refill\LoaderChoiseLift.cs" />
+    <Compile Include="NewStruct\Loader-Refill\LoaderDown.cs" />
+    <Compile Include="NewStruct\Loader-Refill\LoaderDownAntrisole.cs" />
+    <Compile Include="NewStruct\Loader-Refill\LoaderLift.cs" />
+    <Compile Include="NewStruct\Loader-Refill\LoaderTransport.cs" />
+    <Compile Include="NewStruct\Loader-Refill\LoaderUp.cs" />
+    <Compile Include="NewStruct\Loader-Refill\RefillChoise.cs" />
+    <Compile Include="NewStruct\Loader-Refill\RefillLayout.cs" />
+    <Compile Include="NewStruct\Loader-Refill\RefillLayoutComplete.cs" />
+    <Compile Include="NewStruct\Loader-Refill\RefillSet.cs" />
+    <Compile Include="NewStruct\Loader-Refill\RefillSetComplete.cs" />
+    <Compile Include="NewStruct\Loader-Refill\RefillSetCorrect.cs" />
+    <Compile Include="NewStruct\Set\Set.cs" />
+    <Compile Include="NewStruct\Set\SetInicialization.cs" />
+    <Compile Include="NewStruct\Set\SetTransfer.cs" />
+    <Compile Include="NewStruct\Waiting.cs" />
+    <Compile Include="PanelEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="FMain_base.resx">
+      <DependentUpon>FMain_base.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Ref\ARef.cs" />
+    <Compile Include="Ref\Doc.cs" />
+    <Compile Include="Ref\RefBox.cs" />
+    <Compile Include="Ref\RefEmployer.cs" />
+    <Compile Include="Ref\RefGates.cs" />
+    <Compile Include="Ref\RefItem.cs" />
+    <Compile Include="Ref\RefPalleteMove.cs" />
+    <Compile Include="Ref\RefPrinter.cs" />
+    <Compile Include="Ref\RefSection.cs" />
+    <Compile Include="AdvanceObj\ConstantsDepot.cs" />
+    <Compile Include="Ref\RefWarehouse.cs" />
+    <Compile Include="SQL1S.cs" />
+    <Compile Include="SQLSynchronizer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram3.cd" />
+    <None Include="ClassDiagram4.cd" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}">
+        <HostingProcess disable="1" />
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
