@@ -34,7 +34,6 @@ namespace WPM
                 return;
             }
             SS.OnReport(new ReportEventArgs("Задача выбрана..."));
-            
             if (!SS.ChoiseWork(DesireMode))
             {
                 Negative(SS.ExcStr);
@@ -44,7 +43,7 @@ namespace WPM
         } // ReactionKeyDo()
         internal override ABaseMode Init()
         {
-            return Positive();
+            return Positive("Выберите режим работы");
         } // Init()
         internal override ABaseMode Cancel()
         {

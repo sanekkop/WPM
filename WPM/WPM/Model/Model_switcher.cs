@@ -108,8 +108,6 @@ namespace WPM
                     return ToModeChoiseWork();
                 case Mode.SampleSet:
                     return ToModeChoiseWork();
-                case Mode.SampleSetCorrect:
-                    return ToModeSampleSet();
                 case Mode.ControlCollect:
                     return ToModeChoiseWork();
                 case Mode.HarmonizationInicialize:
@@ -249,7 +247,7 @@ namespace WPM
                     return RDSamplePut(IDD);
 
                 case Mode.SampleSet:
-                    return RDSampleSet(IDD, null);
+                    return RDSampleSet(IDD);
 
                 case Mode.ControlCollect:
                     return RDControlCollect(IDD);
@@ -259,7 +257,10 @@ namespace WPM
 
                 case Mode.SetInicialization:
                     return RDSetInicialization(IDD);
-
+               
+                case Mode.ChoiseWorkAcceptance:
+                    goto case Mode.Waiting;
+                
                 default:
                     FExcStr = "Нет действий с данным документом в данном режиме!";
                     return false;
@@ -298,9 +299,6 @@ namespace WPM
 
                 case Mode.Set:
                     return RBSet(Barcode);
-
-                case Mode.SampleSet:
-                    return RBSampleSet(Barcode);
 
                 case Mode.SetSelfContorl:
                     return RBSetSelfControl(Barcode);

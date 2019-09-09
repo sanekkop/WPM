@@ -1426,182 +1426,30 @@ namespace WPM
         private void ModeSampleSetView()
         {
             lblState.Text = "Набор образцов";
-            lblAction.Text = "Ожидание команды";
 
             DataGridTextBoxColumn columnStyle;
             DataGridTableStyle dgts;
 
-            DataGrid dgGoodsCC = new DataGrid();
-            dgGoodsCC.Location = new Point(CurrWidth + 40, 0);
-            dgGoodsCC.Name = "dgGoodsCC";
-            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 80, 165);
-            dgGoodsCC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
-            dgGoodsCC.DataSource = SS.ATTable;
-            dgGoodsCC.RowHeadersVisible = false;
+            DataGrid dgCC = new DataGrid();
+            dgCC.Location = new Point(CurrWidth < 320 ? 4 : 44, 10);
+            dgCC.Name = "dgCC";
+            dgCC.Size = new System.Drawing.Size(230, 170);
+            dgCC.DataSource = SS.CCListSample;
+            dgCC.RowHeadersVisible = false;
             #region Styles
-            dgGoodsCC.TableStyles.Clear();
+            dgCC.TableStyles.Clear();
             dgts = new DataGridTableStyle();
             columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "№";
-            columnStyle.MappingName = "Number";
-            columnStyle.Width = CurrWidth < 320 ? 20 : 35;
+            columnStyle.HeaderText = "Сборочный лист";
+            columnStyle.MappingName = "View";
+            columnStyle.Width = 210;
             dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Адрес";
-            columnStyle.MappingName = "Adress";
-            columnStyle.Width = CurrWidth < 320 ? 60 : 90;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Инв.код";
-            columnStyle.MappingName = "InvCode";
-            columnStyle.Width = CurrWidth < 320 ? 49 : 68;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Кол.";
-            columnStyle.MappingName = "Count";
-            columnStyle.Width = CurrWidth < 320 ? 30 : 40;
-            dgts.GridColumnStyles.Add(columnStyle);
-
-            dgGoodsCC.TableStyles.Add(dgts);
+            dgCC.TableStyles.Add(dgts);
             #endregion
-            pnlCurrent.Controls.Add(dgGoodsCC);
+            pnlCurrent.Controls.Add(dgCC);
 
-            Label lblHeaderSum = new Label();
-            lblHeaderSum.Font = FontTahoma8Bold;
-            lblHeaderSum.ForeColor = Color.DarkRed;
-            lblHeaderSum.Name = "lblHeaderSum";
-            lblHeaderSum.TextAlign = ContentAlignment.TopCenter;
-            lblHeaderSum.Location = new Point(2 * CurrWidth - 120 - 3, 165 + 2);
-            lblHeaderSum.Size = new Size(120, 20);
-            pnlCurrent.Controls.Add(lblHeaderSum);
-
-            Label lblHeader = new Label();
-            lblHeader.Font = FontTahoma12Bold;
-            lblHeader.Name = "lblHeader";
-            lblHeader.TextAlign = ContentAlignment.TopCenter;
-            lblHeader.Location = new Point(4, 0);
-            lblHeader.Size = new Size(CurrWidth - 10, 20);
-            pnlCurrent.Controls.Add(lblHeader);
-
-            Label lblPrevious = new Label();
-            lblPrevious.Font = FontTahoma10Bold;
-            lblPrevious.BackColor = Color.LightGray;
-            lblPrevious.Name = "lblPrevious";
-            lblPrevious.TextAlign = ContentAlignment.TopCenter;
-            lblPrevious.Location = new Point(4, 20 + 1);
-            lblPrevious.Size = new Size(CurrWidth - 10, 32);
-            pnlCurrent.Controls.Add(lblPrevious);
-
-            Label lblHeaderPrice = new Label();
-            lblHeaderPrice.Font = FontTahoma8Bold;
-            lblHeaderPrice.ForeColor = Color.DarkRed;
-            lblHeaderPrice.Name = "lblHeaderPrice";
-            lblHeaderPrice.TextAlign = ContentAlignment.TopCenter;
-            lblHeaderPrice.Location = new Point(0, 50 + 4);
-            lblHeaderPrice.Size = new Size(50, 30);
-            pnlCurrent.Controls.Add(lblHeaderPrice);
-
-            Label lblHeaderBalance = new Label();
-            lblHeaderBalance.Font = FontTahoma8Bold;
-            lblHeaderBalance.ForeColor = Color.DarkRed;
-            lblHeaderBalance.Name = "lblHeaderBalance";
-            lblHeaderBalance.TextAlign = ContentAlignment.TopCenter;
-            lblHeaderBalance.Location = new Point(CurrWidth - 50, 50 + 4);
-            lblHeaderBalance.Size = new Size(50, 30);
-            pnlCurrent.Controls.Add(lblHeaderBalance);
-
-            Label lblAdress = new Label();
-            lblAdress.Font = FontTahoma16Bold;
-            lblAdress.Name = "lblAdress";
-            lblAdress.TextAlign = ContentAlignment.TopCenter;
-            lblAdress.Location = new Point(50, 50 + 4);
-            lblAdress.Size = new Size(CurrWidth - 100, 25);
-            pnlCurrent.Controls.Add(lblAdress);
-
-            Label lblInvCode = new Label();
-            lblInvCode.Font = FontTahoma16Bold;
-            lblInvCode.Name = "lblInvCode";
-            lblInvCode.TextAlign = ContentAlignment.TopRight;
-            lblInvCode.Location = new Point(4, 75 + 6);
-            lblInvCode.Size = new Size(100, 25 + 6);
-            pnlCurrent.Controls.Add(lblInvCode);
-
-            Label lblItem = new Label();
-            lblItem.Font = FontTahoma10Regular;
-            lblItem.Name = "lblItem";
-            lblItem.TextAlign = ContentAlignment.TopLeft;
-            lblItem.Location = new Point(106, 75 + 6 - 2);
-            lblItem.Size = new Size(CurrWidth - 106, 25 + 6);
-            pnlCurrent.Controls.Add(lblItem);
-
-            Label lblCount = new Label();
-            lblCount.Font = FontTahoma16Bold;
-            lblCount.Name = "lblCount";
-            lblCount.TextAlign = ContentAlignment.TopCenter;
-            lblCount.Location = new Point(4, 100 + 8 + 2);
-            lblCount.Size = new Size(CurrWidth - 10, 25);
-            pnlCurrent.Controls.Add(lblCount);
-
-            Label lblBox = new Label();
-            lblBox.Font = FontTahoma12Bold;
-            lblBox.Name = "lblBox";
-            lblBox.TextAlign = ContentAlignment.TopCenter;
-            lblBox.Location = new Point(50, 125 + 10);
-            lblBox.Size = new Size(CurrWidth - 100, 20);
-            pnlCurrent.Controls.Add(lblBox);
-
-            Label lblDetailsCount = new Label();
-            lblDetailsCount.Font = FontTahoma8Bold;
-            //lblDetailsCountForeColor = Color.DarkRed;
-            lblDetailsCount.BackColor = Color.Yellow;
-            lblDetailsCount.Name = "lblDetailsCount";
-            lblDetailsCount.TextAlign = ContentAlignment.TopCenter;
-            lblDetailsCount.Location = new Point(CurrWidth < 320 ? 80 : 120, 158);
-            lblDetailsCount.Size = new Size(80, 30);
-            pnlCurrent.Controls.Add(lblDetailsCount);
-            lblDetailsCount.BringToFront();
-
-            //Поле для ввода количества
-            TextBox tbCount = new TextBox();
-            tbCount.Name = "tbCount";
-            tbCount.Location = new Point(130, 140 + 10);
-            tbCount.Size = new Size(60, 28);
-            tbCount.Font = FontTahoma14Bold;
-            tbCount.Text = "";
-            pnlCurrent.Controls.Add(tbCount);
-            tbCount.Visible = false;
-
-            Label lblKey1 = new Label();
-            lblKey1.BackColor = Color.LightGray;
-            lblKey1.Font = FontTahoma10Regular;
-            lblKey1.Name = "lblKey1";
-            lblKey1.TextAlign = ContentAlignment.TopLeft;
-            lblKey1.Location = new Point(4, 160);
-            lblKey1.Size = new Size(90, 18);
-            lblKey1.Text = SS.DocSet.Special ? "ОСОБЕННАЯ" : "9 - коррект.";
-            pnlCurrent.Controls.Add(lblKey1);
-
-            Label lblKey2 = new Label();
-            lblKey2.Font = FontTahoma10Regular;
-            lblKey2.BackColor = Color.LightGray;
-            lblKey2.Name = "lblKey2";
-            lblKey2.TextAlign = ContentAlignment.TopRight;
-            lblKey2.Location = new Point(CurrWidth - 96, 160);
-            lblKey2.Size = new Size(90, 18);
-            lblKey2.Text = "Esc - выход";
-            pnlCurrent.Controls.Add(lblKey2);
-
-            PictureBox pbPhoto = new PictureBox();
-            pbPhoto.Name = "pbPhoto";
-            pbPhoto.Location = new Point(0, 0);
-            pbPhoto.Size = new Size(320, 185);
-            pbPhoto.Visible = false;
-            pnlCurrent.Controls.Add(pbPhoto);
-
-            lblAction.ForeColor = Color.Blue;
-
-            ModeSampleSetReView();
-        }   //ModeSampleSetView
+            lblAction.Text  = "Отсканируйте сборочные листы...";
+        }
         private void ModeControlCollectView()
         {
             DataGridTextBoxColumn columnStyle;
@@ -2274,7 +2122,24 @@ namespace WPM
             lblAnswer2.Text      = "2 - недостача";
             pnlCurrent.Controls.Add(lblAnswer2);
 
-            
+            Label lblAnswer3 = new Label();
+            lblAnswer3.Font      = FontTahoma12Bold;
+            lblAnswer3.Name      = "lblAnswer3";
+            lblAnswer3.TextAlign = ContentAlignment.TopLeft; 
+            lblAnswer3.Location  = new Point(100, 80+8);
+            lblAnswer3.Size      = new Size (CurrWidth - 50, 20);
+            lblAnswer3.Text      = "3 - отказ";
+            pnlCurrent.Controls.Add(lblAnswer3);
+
+            Label lblAnswer4 = new Label();
+            lblAnswer4.Font      = FontTahoma12Bold;
+            lblAnswer4.Name      = "lblAnswer4";
+            lblAnswer4.TextAlign = ContentAlignment.TopLeft; 
+            lblAnswer4.Location  = new Point(100, 100+10);
+            lblAnswer4.Size      = new Size (CurrWidth - 50, 20);
+            lblAnswer4.Text      = "4 - отказ без ШК";
+            lblAnswer4.Visible   = false;
+            pnlCurrent.Controls.Add(lblAnswer4);
 
             //Поле для ввода количества
             TextBox tbCount = new TextBox();
@@ -2312,83 +2177,6 @@ namespace WPM
             lblAction.Text = SS.ExcStr;
             ChoiseCorrect = 0;
         } // ModeSetCorrectView
-        private void ModeSampleSetCorrectView()
-        {
-            Label lblHeader = new Label();
-            lblHeader.Font = FontTahoma12Bold;
-            lblHeader.ForeColor = Color.Red;
-            lblHeader.Name = "lblHeader";
-            lblHeader.TextAlign = ContentAlignment.TopCenter;
-            lblHeader.Location = new Point(4, 0);
-            lblHeader.Size = new Size(CurrWidth - 10, 20);
-            lblHeader.Text = "Корректировка позиции " + SS.CCItem.InvCode;
-            pnlCurrent.Controls.Add(lblHeader);
-
-            Label lblAnswer0 = new Label();
-            lblAnswer0.Font = FontTahoma12Bold;
-            lblAnswer0.Name = "lblAnswer0";
-            lblAnswer0.TextAlign = ContentAlignment.TopLeft;
-            lblAnswer0.Location = new Point(100, 20 + 2);
-            lblAnswer0.Size = new Size(CurrWidth - 50, 20);
-            lblAnswer0.Text = "0 - назад (отмена)";
-            pnlCurrent.Controls.Add(lblAnswer0);
-
-            Label lblAnswer1 = new Label();
-            lblAnswer1.Font = FontTahoma12Bold;
-            lblAnswer1.Name = "lblAnswer1";
-            lblAnswer1.TextAlign = ContentAlignment.TopLeft;
-            lblAnswer1.Location = new Point(100, 40 + 4);
-            lblAnswer1.Size = new Size(CurrWidth - 50, 20);
-            lblAnswer1.Text = "1 - брак";
-            pnlCurrent.Controls.Add(lblAnswer1);
-
-            Label lblAnswer2 = new Label();
-            lblAnswer2.Font = FontTahoma12Bold;
-            lblAnswer2.Name = "lblAnswer2";
-            lblAnswer2.TextAlign = ContentAlignment.TopLeft;
-            lblAnswer2.Location = new Point(100, 60 + 6);
-            lblAnswer2.Size = new Size(CurrWidth - 50, 20);
-            lblAnswer2.Text = "2 - недостача";
-            pnlCurrent.Controls.Add(lblAnswer2);
-
-            //Поле для ввода количества
-            TextBox tbCount = new TextBox();
-            tbCount.Name = "tbCount";
-            tbCount.Location = new Point(120, 120 + 12);
-            tbCount.Size = new Size(60, 28);
-            tbCount.Font = FontTahoma14Bold;
-            tbCount.Text = "";
-            pnlCurrent.Controls.Add(tbCount);
-            tbCount.Visible = false;
-
-            Label lblKey1 = new Label();
-            lblKey1.Font = FontTahoma10Regular;
-            lblKey1.ForeColor = Color.White;
-            lblKey1.BackColor = Color.Green;
-            lblKey1.Name = "lblKey1";
-            lblKey1.TextAlign = ContentAlignment.TopLeft;
-            lblKey1.Location = new Point(4, 160);
-            lblKey1.Size = new Size(110, 18);
-            lblKey1.Text = "'зеленая' - отбор";
-            pnlCurrent.Controls.Add(lblKey1);
-            lblKey1.Visible = false;
-
-            Label lblKey2 = new Label();
-            lblKey2.Font = FontTahoma10Regular;
-            lblKey2.BackColor = Color.LightGray;
-            lblKey2.Name = "lblKey2";
-            lblKey2.TextAlign = ContentAlignment.TopRight;
-            lblKey2.Location = new Point(CurrWidth - 116, 160);
-            lblKey2.Size = new Size(110, 18);
-            lblKey2.Text = "0, Esc - назад";
-            pnlCurrent.Controls.Add(lblKey2);
-
-            lblAction.ForeColor = Color.Blue;
-            lblAction.Text = SS.ExcStr;
-            ChoiseCorrect = 0;
-
-
-        } // ModeSampleSetCorrectView
         private void ModeChoiseDownView()
         {
             lblState.Text = "Спуск выбор (" + (SS.Const.CarsCount == 0 ? "нет ограничений" : SS.Const.CarsCount.ToString() + " авто") + ")";
@@ -3220,10 +3008,6 @@ namespace WPM
                     break;
                 case Mode.SampleSet:
                     ModeSampleSetView();
-                    break;
-                case Mode.SampleSetCorrect:
-                    lblState.Text = SS.DocDown.View;
-                    ModeSampleSetCorrectView();
                     break;
                 case Mode.ControlCollect:
                     lblState.Text = "Просмотр сборочных листов";

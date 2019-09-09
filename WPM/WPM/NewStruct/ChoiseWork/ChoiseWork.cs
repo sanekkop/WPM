@@ -260,7 +260,10 @@ namespace WPM
             }
             else if (key == Keys.D1 && Employer.CanAcceptance)
             {
-                DesireMode = Mode.Acceptance;
+                SS.OnReport(new ReportEventArgs("Задача выбрана..."));
+                JumpTo(new ChoiseWorkAcceptance(SS, this));
+                return;
+                //DesireMode = Mode.Acceptance;
             }
             else if (key == Keys.D2 && Employer.CanTransfer)
             {
@@ -280,7 +283,7 @@ namespace WPM
             {
                 DesireMode = Mode.SampleInventory;
             }
-            else if (key == Keys.D6 && (Employer.CanLayOutSample || Employer.CanGiveSample))    //было CanGiveSample. Изменение по заявке #661(вход в неактивные режимы 5 и 6)
+            else if (key == Keys.D6 && Employer.CanLayOutSample)    //было CanGiveSample. Изменение по заявке #661(вход в неактивные режимы 5 и 6)
             {
                 SS.OnReport(new ReportEventArgs("Задача выбрана..."));
                 JumpTo(new ChoiseWorkSample(SS, this));

@@ -48,7 +48,7 @@ namespace WPM
             #region 1 - Приёмка/Take
             Label btnTake = new Label();
             btnTake.Name = "btnTake";
-            btnTake.Text = "1 - Приемка";
+            btnTake.Text = "1 - Приемка ***";
             btnTake.TextAlign = ContentAlignment.TopCenter;
             btnTake.Location = new Point(6, 19);
             btnTake.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
@@ -113,7 +113,7 @@ namespace WPM
             btnSamples.Location = new Point(CurrWidth < 320 ? 122 : 162, 19);
             btnSamples.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
             btnSamples.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
-            btnSamples.ForeColor = SS.Employer.CanLayOutSample || SS.Employer.CanGiveSample ? Color.Black : Color.DarkGray;
+            btnSamples.ForeColor = SS.Employer.CanLayOutSample && SS.Employer.CanGiveSample ? Color.Black : Color.DarkGray;
             btnSamples.BackColor = Color.LightGray;
             pnlCurrent.Controls.Add(btnSamples);
             #endregion
@@ -2024,7 +2024,133 @@ namespace WPM
             lblItemTest.Text = Obj.Item.Name;
             pnlCurrent.Controls.Add(lblItemTest);*/
 
-        } 
+        }
+
+        private void ChoiseWorkAcceptance_view()
+        {
+            lblState.Text = "Выбор работы (приемка)";
+            ChoiseWorkAcceptance Obj = SS.MM as ChoiseWorkAcceptance;
+
+            Screan = 0;
+            DrawlblResult();
+            Label btnCancel = new Label();
+            btnCancel.Name = "btnCancel";
+            btnCancel.Text = "0 - Отмена";
+            btnCancel.TextAlign = ContentAlignment.TopCenter;
+            btnCancel.Location = new Point(6, 0);
+            btnCancel.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
+            btnCancel.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnCancel.ForeColor = Color.Black;
+            btnCancel.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnCancel);
+
+            Label btnAcc = new Label();
+            btnAcc.Name = "btnAcc";
+            btnAcc.Text = "1 - Приемка";
+            btnAcc.TextAlign = ContentAlignment.TopCenter;
+            btnAcc.Location = new Point(6, 19);
+            btnAcc.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
+            btnAcc.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnAcc.ForeColor = SS.Employer.CanAcceptance ? Color.Black : Color.DarkGray;
+            btnAcc.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnAcc);
+
+            Label btnAccCr = new Label();
+            btnAccCr.Name = "btnAccCr";
+            btnAccCr.Text = "2 - Кросс докинг";
+            btnAccCr.TextAlign = ContentAlignment.TopCenter;
+            btnAccCr.Location = new Point(6, 38);
+            btnAccCr.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
+            btnAccCr.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnAccCr.ForeColor = SS.Employer.CanAcceptance ? Color.Black : Color.DarkGray;
+            btnAccCr.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnAccCr);
+
+            Text = "WPM " + Vers + " (" + Helper.GetShortFIO(SS.Employer.Name) + ")";
+            pnlCurrent.GetLabelByName("lblResult").Text = SS.Employer.Name + " Сессия открыта";
+            lblAction.Text = Obj.ExcStr;
+            lblAction.ForeColor = Color.Blue;
+        }        //Выбор работы (приемка)
+        private void ChoiseWorkAcceptance_review() { }
+
+        private void AcceptanceCross_view()
+        {
+            lblState.Text = "Приемка Кросс Докинг";
+            AcceptanceCross Obj = SS.MM as AcceptanceCross;
+
+            Screan = 0;
+            //DrawlblResult();
+
+            DataGridTextBoxColumn columnStyle;
+            DataGridTableStyle dgts;
+
+            BindingSource BS = new BindingSource();
+            BS.DataSource = SS.AcceptedCross;
+            BS.Filter = null;
+
+            DataGrid dgAC = new DataGrid();
+            dgAC.BackgroundColor = Color.White;
+            //dgAC.Location = new Point(-1 * Screan * pnlCurrent.Width - (CurrWidth - 6), 20);
+            dgAC.Location = new Point(9, 20); 
+            dgAC.Name = "dgAcceptedCross";
+            dgAC.Size = new Size(CurrWidth - 20, 100);
+            dgAC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
+            dgAC.RowHeadersVisible = false;
+            #region Styles;
+            //Настройка отображения
+            dgAC.TableStyles.Clear();
+            dgts = new DataGridTableStyle();
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "№";
+            columnStyle.MappingName = "LINENO_";
+            columnStyle.Width = 26;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Накл.";
+            columnStyle.MappingName = "DOCNO";
+            columnStyle.Width = CurrWidth < 320 ? 70 : 76;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Клиент";
+            columnStyle.MappingName = "Client";
+            columnStyle.Width = CurrWidth < 320 ? 100 : 106;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Количество";
+            columnStyle.MappingName = "CountPack";
+            columnStyle.Width = 38;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Всего";
+            columnStyle.MappingName = "CountPackFull";
+            columnStyle.Width = 32;
+            dgts.GridColumnStyles.Add(columnStyle);
+            dgAC.TableStyles.Add(dgts);
+            #endregion
+            dgAC.DataSource = BS;
+            dgAC.CurrentCellChanged += OnCurrentCellChanged;
+            pnlCurrent.Controls.Add(dgAC);
+
+
+            //Кнопка закрыть задание
+            Label btnCompleteCross = new Label();
+            btnCompleteCross.Name = "btnCompleteCross";
+            btnCompleteCross.Text = "SPACE - Принять";
+            btnCompleteCross.TextAlign = ContentAlignment.TopCenter;
+            btnCompleteCross.Location = new Point(CurrWidth + 2 - pnlCurrent.Width, 160);
+            btnCompleteCross.Size = new Size(CurrWidth < 320 ? 85 : 135, 24);
+            btnCompleteCross.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnCompleteCross.ForeColor = Color.Black;
+            btnCompleteCross.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnCompleteCross);
+
+
+            //Text = "WPM " + Vers + " (" + Helper.GetShortFIO(SS.Employer.Name) + ")";
+            //pnlCurrent.GetLabelByName("lblResult").Text = SS.Employer.Name + " Сессия открыта";
+            //lblAction.Text = Obj.ExcStr;
+            //lblAction.ForeColor = Color.Blue;
+        }        //Выбор работы (приемка)
+        private void AcceptanceCross_review() { }
 
     
     }
