@@ -113,7 +113,7 @@ namespace WPM
             btnSamples.Location = new Point(CurrWidth < 320 ? 122 : 162, 19);
             btnSamples.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
             btnSamples.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
-            btnSamples.ForeColor = SS.Employer.CanLayOutSample && SS.Employer.CanGiveSample ? Color.Black : Color.DarkGray;
+            btnSamples.ForeColor = SS.Employer.CanLayOutSample || SS.Employer.CanGiveSample ? Color.Black : Color.DarkGray;
             btnSamples.BackColor = Color.LightGray;
             pnlCurrent.Controls.Add(btnSamples);
             #endregion

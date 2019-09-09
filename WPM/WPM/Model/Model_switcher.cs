@@ -249,7 +249,7 @@ namespace WPM
                     return RDSamplePut(IDD);
 
                 case Mode.SampleSet:
-                    return RDSampleSet(IDD);
+                    return RDSampleSet(IDD, null);
 
                 case Mode.ControlCollect:
                     return RDControlCollect(IDD);

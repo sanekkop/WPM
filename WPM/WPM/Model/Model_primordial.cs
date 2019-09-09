@@ -235,6 +235,7 @@ namespace WPM
         public string LabelControlCC;   //Представление сборочного листа
         public DataTable CCRP;  //Таблица сборочного листа
         public DataTable DownSituation; //Таблица показывает ситуацию на секторах
+        public DataTable ATTable;   //для табл. части АП
 
         public DataTable SampleTransfers;
 
@@ -2591,7 +2592,21 @@ namespace WPM
         {
             LastGoodAdress = null;
             Const.Refresh();
-
+            Employer.Refresh();     // проверим не изменились ли галки на спуск/комплектацию
+            if (!Employer.CanDown  && !Employer.CanComplectation)
+            {
+                CurrentMode = Mode.ChoiseWork;         
+                FCurrentMode = CurrentMode;
+                OnChangeMode(new ChangeModeEventArgs(MM));
+                return true;
+            }
+            if (!Employer.CanDown && Employer.CanComplectation)
+            {
+                CurrentMode = Mode.ChoiseWork;
+                FCurrentMode = CurrentMode;
+                OnChangeMode(new ChangeModeEventArgs(MM));
+                return true;
+            }
             //Сам запрос
             string TextQuery = "select * from WPM_fn_GetChoiseDown()";
             if (!ExecuteWithRead(TextQuery, out DownSituation))
@@ -2623,6 +2638,7 @@ namespace WPM
         }
         public bool ToModeDown()
         {
+
             DocDown = new StrictDoc();
             string TextQuery = "select * from dbo.WPM_fn_ToModeDown(:Employer)";
             QuerySetParam(ref TextQuery, "Employer",    Employer.ID);

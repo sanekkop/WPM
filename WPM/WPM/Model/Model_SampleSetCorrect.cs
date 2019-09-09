@@ -16,7 +16,7 @@ namespace WPM
         public bool CompleteCorrectSample(int Choise, int CountCorrect)
         {
             //Заглушка, рефрешим позицию, чтобы не было проблем, если оборвется связь
-            if (!RDSampleSet(DocSet.ID))
+            if (!RDSampleSet(DocSet.ID, null))
             {
                 FCurrentMode = Mode.SampleSetCorrect;
                 return false;
@@ -44,16 +44,6 @@ namespace WPM
                     AdressCode = 12;
                     CorrectReason = "   2EV   ";
                     What = "недостача";
-                    break;
-                case 3:
-                    AdressCode = 2;
-                    CorrectReason = "   2EW   ";
-                    What = "отказ";
-                    break;
-                case 4:
-                    AdressCode = 2;
-                    CorrectReason = "   4MG   ";
-                    What = "отказ по ШК";
                     break;
                 default:
                     FExcStr = "Неясная причина корректировки!";

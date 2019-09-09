@@ -1432,11 +1432,11 @@ namespace WPM
             DataGridTableStyle dgts;
 
             DataGrid dgGoodsCC = new DataGrid();
-            dgGoodsCC.Location = new Point(CurrWidth + 2, 0);
+            dgGoodsCC.Location = new Point(CurrWidth + 40, 0);
             dgGoodsCC.Name = "dgGoodsCC";
-            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 6, 165);
+            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 80, 165);
             dgGoodsCC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
-            dgGoodsCC.DataSource = SS.CCRP;
+            dgGoodsCC.DataSource = SS.ATTable;
             dgGoodsCC.RowHeadersVisible = false;
             #region Styles
             dgGoodsCC.TableStyles.Clear();
@@ -1461,12 +1461,6 @@ namespace WPM
             columnStyle.MappingName = "Count";
             columnStyle.Width = CurrWidth < 320 ? 30 : 40;
             dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Сумма";
-            columnStyle.MappingName = "Sum";
-            columnStyle.Width = CurrWidth < 320 ? 35 : 60;
-            dgts.GridColumnStyles.Add(columnStyle);
-            //columnStyle.Width = CurrWidth < 320 ? 25 : 40;
 
             dgGoodsCC.TableStyles.Add(dgts);
             #endregion
@@ -2280,24 +2274,7 @@ namespace WPM
             lblAnswer2.Text      = "2 - недостача";
             pnlCurrent.Controls.Add(lblAnswer2);
 
-            Label lblAnswer3 = new Label();
-            lblAnswer3.Font      = FontTahoma12Bold;
-            lblAnswer3.Name      = "lblAnswer3";
-            lblAnswer3.TextAlign = ContentAlignment.TopLeft; 
-            lblAnswer3.Location  = new Point(100, 80+8);
-            lblAnswer3.Size      = new Size (CurrWidth - 50, 20);
-            lblAnswer3.Text      = "3 - отказ";
-            pnlCurrent.Controls.Add(lblAnswer3);
-
-            Label lblAnswer4 = new Label();
-            lblAnswer4.Font      = FontTahoma12Bold;
-            lblAnswer4.Name      = "lblAnswer4";
-            lblAnswer4.TextAlign = ContentAlignment.TopLeft; 
-            lblAnswer4.Location  = new Point(100, 100+10);
-            lblAnswer4.Size      = new Size (CurrWidth - 50, 20);
-            lblAnswer4.Text      = "4 - отказ без ШК";
-            lblAnswer4.Visible   = false;
-            pnlCurrent.Controls.Add(lblAnswer4);
+            
 
             //Поле для ввода количества
             TextBox tbCount = new TextBox();
@@ -2335,6 +2312,83 @@ namespace WPM
             lblAction.Text = SS.ExcStr;
             ChoiseCorrect = 0;
         } // ModeSetCorrectView
+        private void ModeSampleSetCorrectView()
+        {
+            Label lblHeader = new Label();
+            lblHeader.Font = FontTahoma12Bold;
+            lblHeader.ForeColor = Color.Red;
+            lblHeader.Name = "lblHeader";
+            lblHeader.TextAlign = ContentAlignment.TopCenter;
+            lblHeader.Location = new Point(4, 0);
+            lblHeader.Size = new Size(CurrWidth - 10, 20);
+            lblHeader.Text = "Корректировка позиции " + SS.CCItem.InvCode;
+            pnlCurrent.Controls.Add(lblHeader);
+
+            Label lblAnswer0 = new Label();
+            lblAnswer0.Font = FontTahoma12Bold;
+            lblAnswer0.Name = "lblAnswer0";
+            lblAnswer0.TextAlign = ContentAlignment.TopLeft;
+            lblAnswer0.Location = new Point(100, 20 + 2);
+            lblAnswer0.Size = new Size(CurrWidth - 50, 20);
+            lblAnswer0.Text = "0 - назад (отмена)";
+            pnlCurrent.Controls.Add(lblAnswer0);
+
+            Label lblAnswer1 = new Label();
+            lblAnswer1.Font = FontTahoma12Bold;
+            lblAnswer1.Name = "lblAnswer1";
+            lblAnswer1.TextAlign = ContentAlignment.TopLeft;
+            lblAnswer1.Location = new Point(100, 40 + 4);
+            lblAnswer1.Size = new Size(CurrWidth - 50, 20);
+            lblAnswer1.Text = "1 - брак";
+            pnlCurrent.Controls.Add(lblAnswer1);
+
+            Label lblAnswer2 = new Label();
+            lblAnswer2.Font = FontTahoma12Bold;
+            lblAnswer2.Name = "lblAnswer2";
+            lblAnswer2.TextAlign = ContentAlignment.TopLeft;
+            lblAnswer2.Location = new Point(100, 60 + 6);
+            lblAnswer2.Size = new Size(CurrWidth - 50, 20);
+            lblAnswer2.Text = "2 - недостача";
+            pnlCurrent.Controls.Add(lblAnswer2);
+
+            //Поле для ввода количества
+            TextBox tbCount = new TextBox();
+            tbCount.Name = "tbCount";
+            tbCount.Location = new Point(120, 120 + 12);
+            tbCount.Size = new Size(60, 28);
+            tbCount.Font = FontTahoma14Bold;
+            tbCount.Text = "";
+            pnlCurrent.Controls.Add(tbCount);
+            tbCount.Visible = false;
+
+            Label lblKey1 = new Label();
+            lblKey1.Font = FontTahoma10Regular;
+            lblKey1.ForeColor = Color.White;
+            lblKey1.BackColor = Color.Green;
+            lblKey1.Name = "lblKey1";
+            lblKey1.TextAlign = ContentAlignment.TopLeft;
+            lblKey1.Location = new Point(4, 160);
+            lblKey1.Size = new Size(110, 18);
+            lblKey1.Text = "'зеленая' - отбор";
+            pnlCurrent.Controls.Add(lblKey1);
+            lblKey1.Visible = false;
+
+            Label lblKey2 = new Label();
+            lblKey2.Font = FontTahoma10Regular;
+            lblKey2.BackColor = Color.LightGray;
+            lblKey2.Name = "lblKey2";
+            lblKey2.TextAlign = ContentAlignment.TopRight;
+            lblKey2.Location = new Point(CurrWidth - 116, 160);
+            lblKey2.Size = new Size(110, 18);
+            lblKey2.Text = "0, Esc - назад";
+            pnlCurrent.Controls.Add(lblKey2);
+
+            lblAction.ForeColor = Color.Blue;
+            lblAction.Text = SS.ExcStr;
+            ChoiseCorrect = 0;
+
+
+        } // ModeSampleSetCorrectView
         private void ModeChoiseDownView()
         {
             lblState.Text = "Спуск выбор (" + (SS.Const.CarsCount == 0 ? "нет ограничений" : SS.Const.CarsCount.ToString() + " авто") + ")";
@@ -3169,7 +3223,7 @@ namespace WPM
                     break;
                 case Mode.SampleSetCorrect:
                     lblState.Text = SS.DocDown.View;
-                    ModeSetCorrectView();
+                    ModeSampleSetCorrectView();
                     break;
                 case Mode.ControlCollect:
                     lblState.Text = "Просмотр сборочных листов";

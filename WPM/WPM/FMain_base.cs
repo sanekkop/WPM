@@ -20,7 +20,7 @@ namespace WPM
         //const string FileName = @"..\..\Settings.txt";
         const string Vers = "4.46";     //Номер версии
         //const string BaseName = "int9999001rab";
-        const string BaseName = "int9999001ad1"; //debug_true
+        const string BaseName = "int9999001ad3"; //debug_true
         Model SS;                       //через данный класс осуществляем общение с БД
         private ExPanel pnlCurrent;
         private int Screan;
@@ -989,6 +989,52 @@ namespace WPM
                     BadDone();
                 }
             }
+            if (Key == Keys.Right && Screan == 0)
+            {
+                if (!SS.Employer.CanRoute)
+                {
+                    string appendix = " (нельзя посмотреть маршрут)";
+                    if (lblAction.Text.IndexOf(appendix) < 0)
+                    {
+                        lblAction.Text = lblAction.Text + appendix;
+                    }
+                    return;
+                }
+                string tmp = lblAction.Text;
+                lblAction.Text = "Подгружаю список...";
+                Refresh();
+                // дописать свою функцию
+                SS.RefreshAMT();
+                View();
+                //Вернем текущую строку
+                DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
+                try
+                {
+                    DataGridCell currCell = dgGoodsCC.CurrentCell;
+                    currCell.ColumnNumber = 2;
+                    dgGoodsCC.CurrentCell = currCell;
+                    dgGoodsCC.CurrentRowIndex = CurrLineSet;
+                }
+                catch
+                {
+                }
+                pnlCurrent.Sweep(-1);
+                Screan -= 1;
+                dgGoodsCC.Focus();
+                lblAction.Text = tmp;
+            }
+            else if (Key == Keys.Left && Screan == -1)
+            {
+                DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
+                CurrLineSet = dgGoodsCC.CurrentRowIndex;
+                pnlCurrent.Sweep(1);
+                Screan += 1;
+                TextBox tbCount = pnlCurrent.GetTextBoxByName("tbCount");
+                if (tbCount.Visible)
+                {
+                    pnlCurrent.GetControlByName("tbCount").Focus();
+                }
+            }
             if (Screan == 0 && Key == Keys.D9 && SS.CurrentAction != ActionSet.EnterCount && !SS.DocSet.Special)
             {
                 if (SS.Const.StopCorrect)
@@ -1409,8 +1455,7 @@ namespace WPM
             if (ChoiseCorrect == 0)
             {
                 ChoiseCorrect = Helper.WhatInt(Key);
-                ReView();
-                if (ChoiseCorrect > 0 && ChoiseCorrect < 4)
+                if (ChoiseCorrect > 0 && ChoiseCorrect < 3)
                 {
                     lblAction.Text = "Укажите количество в штуках";
                 }
@@ -1418,6 +1463,7 @@ namespace WPM
                 {
                     ChoiseCorrect = 0;
                 }
+                ReView();
             }
             else if (Key == Keys.Enter || Key == Keys.F14 || Key == Keys.F2 || Key == Keys.F1 || Key.GetHashCode() == 189)
             {
@@ -1524,7 +1570,10 @@ namespace WPM
                 lblAction.Text = "Обновляю список...";
                 Refresh();
                 SS.ToModeChoiseDown();
-                ModeChoiseDownView();
+                if (SS.Employer.CanDown && (SS.Employer.CanComplectation || !SS.Employer.CanComplectation))
+                {
+                    ModeChoiseDownView();
+                }
             }
 
             int Choise = Helper.WhatInt(Key);
@@ -2139,7 +2188,7 @@ namespace WPM
                 return;
             }
             Dictionary<string, string> dicBarcode = Helper.DisassembleBarcode(strBarcode);
-            if ((SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Set) && Screan != 0)
+            if ((SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.SampleSet) && Screan != 0)
             {
                 lblAction.Text = "ШК не работают на данном экране!";
                 return;

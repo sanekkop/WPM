@@ -594,7 +594,8 @@ namespace WPM
         {
             lblState.Text = SS.DocSet.View; //Обновляем главную надпись
             DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
-            //dgGoodsCC.DataSource = SS.CCRP;
+            dgGoodsCC.DataSource = SS.ATTable;
+
 
             pnlCurrent.GetLabelByName("lblPrevious").Text = SS.PreviousAction;
             Label lblInvCode = pnlCurrent.GetLabelByName("lblInvCode");
@@ -730,16 +731,34 @@ namespace WPM
                 //пока не сделан выбор - все тлен
                 return;
             }
-            for (int j = 0; j < 5; j++)
+            if (SS.CurrentMode == Mode.SetCorrect)
             {
-                Label lblTmp = pnlCurrent.GetLabelByName("lblAnswer" + j.ToString());
-                if (j == ChoiseCorrect)
+                for (int j = 0; j < 5; j++)
                 {
-                    lblTmp.ForeColor = Color.Green;
+                    Label lblTmp = pnlCurrent.GetLabelByName("lblAnswer" + j.ToString());
+                    if (j == ChoiseCorrect)
+                    {
+                        lblTmp.ForeColor = Color.Green;
+                    }
+                    else
+                    {
+                        lblTmp.Visible = false;
+                    }
                 }
-                else
+            }
+            else if (SS.CurrentMode == Mode.SampleSetCorrect)   // поскольку в режиме набора образцов отсутсвует "отказ"
+            {
+                for (int j = 0; j < 3; j++)
                 {
-                    lblTmp.Visible = false;
+                    Label lblTmp = pnlCurrent.GetLabelByName("lblAnswer" + j.ToString());
+                    if (j == ChoiseCorrect)
+                    {
+                        lblTmp.ForeColor = Color.Green;
+                    }
+                    else
+                    {
+                        lblTmp.Visible = false;
+                    }
                 }
             }
             pnlCurrent.GetLabelByName("lblKey1").Visible = true;

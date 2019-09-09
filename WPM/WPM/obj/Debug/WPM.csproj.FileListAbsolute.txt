@@ -124,12 +124,12 @@ T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 
 T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
 T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
 T:\Документация 1С\Радиотерминал\VS 2008\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.exe
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.pdb
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\System.Data.SqlClient.dll
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\ResolveAssemblyReference.cache
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.FMain.resources
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.Properties.Resources.resources
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
-C:\Users\perov\Desktop\Временная\WPM\Оригинал\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.exe
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\WPM.pdb
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\bin\Debug\System.Data.SqlClient.dll
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.FMain.resources
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.Properties.Resources.resources
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
+C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
