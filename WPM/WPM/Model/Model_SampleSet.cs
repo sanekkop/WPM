@@ -71,7 +71,7 @@ namespace WPM
             string TextQuery;
             //Заглушка, рефрешим позицию, чтобы не было проблем, если оборвется связь
             int CountFact = CCItem.CountFact;
-            if (!RDSampleSet(DocSet.ID))
+            if (!RDSampleSet(DocSet.ID, null))
             {
                 CCItem.CountFact = CountFact;
                 return false;
@@ -89,7 +89,7 @@ namespace WPM
                     FExcStr = "Возможность дробить строку отключена!";
                     return false;
                 }
-                //добавить строчку надо
+                //добавляем строчку 
                 TextQuery =
                     "begin tran; " +
                     "update DT$АдресПеремещение " +
@@ -147,11 +147,11 @@ namespace WPM
             //Запись прошла успешно
 
             RefreshAmount();
-            CurrentAction = ActionSet.ScanAdress;   //на всякий случай, если там что-нибудь наебнется, то во вьюхе по крайней мере нельзя будет повторно ввести количество
+            CurrentAction = ActionSet.ScanAdress;   //на всякий случай, если там что-нибудь накроется, то во вьюхе по крайней мере нельзя будет повторно ввести количество
             PreviousAction = "Отобрано " + CCItem.InvCode.Trim() + " - " + CCItem.CountFact.ToString() + " шт. (строка " + Line.ToString() + ")";
             if (AllSetsRow > 0)
             {
-                RDSampleSet(DocSet.ID);
+                RDSampleSet(DocSet.ID, null);
             }
             //если в доке больше нет не отобранных, оповестим 1с о завершении набора образцов
             if (AllSetsRow == 0)
@@ -178,7 +178,7 @@ namespace WPM
             return CompleteLineSampleSet();
 
         } // EnterCountSampleSet
-        private bool RDSampleSet(string IDD)
+        private bool RDSampleSet(string IDD, string AdressID)
         {
             string IDDoc;
             string DocType;
@@ -234,6 +234,7 @@ namespace WPM
                         "ON AOT.item = DocAT.$АдресПеремещение.Товар and AOT.adress = DocAT.$АдресПеремещение.Адрес0 " +
                 "WHERE " +
                     "DocAT.iddoc = :Doc " +
+                    (AdressID == null ? "" : "and DocAT.$АдресПеремещение.Адрес0 = :Adress ") +
                     "and journ.ismark = 0 " +
                     "and DocATStrings.$АдресПеремещение.ТипДокумента = '3' " +
                     "and DocAT.$АдресПеремещение.Дата1 = :EmptyDate " +
@@ -242,6 +243,11 @@ namespace WPM
             SQL1S.QuerySetParam(ref TextQuery, "Doc", IDD);
             SQL1S.QuerySetParam(ref TextQuery, "EmptyDate", SQL1S.GetVoidDate());
             SQL1S.QuerySetParam(ref TextQuery, "Warehouse", Const.MainWarehouse);
+
+            if (AdressID != null)
+            {
+                QuerySetParam(ref TextQuery, "Adress", AdressID);
+            }
 
             if (!ExecuteWithRead(TextQuery, out DT))
             {
@@ -277,8 +283,7 @@ namespace WPM
             CCItem.Details = (int)(decimal)DT.Rows[0]["Details"];
             CCItem.Balance = (int)(decimal)DT.Rows[0]["Balance"];
 
-            CurrentAction = ActionSet.ScanAdress;
-
+		
             //получим АдресВременныый из склада в АдресПеремещениии
             TextQuery =
                 "SELECT " +
@@ -292,6 +297,7 @@ namespace WPM
                 return false;
             }
             DocSet.AdressCollect = DT.Rows[0]["AdresTemp"].ToString();
+            CurrentAction = ActionSet.ScanAdress;
             FExcStr = WhatUNeed();
             return true;
         }
@@ -360,8 +366,7 @@ namespace WPM
                         }
                         if (Adress.ID != CCItem.AdressID)
                         {
-                            FExcStr = "Неверный адрес, отсканируйте заново!";
-                            return false;
+                            return RDSampleSet(DocSet.ID, Adress.ID);
                         }
                         if (CCItem.Details > 0 && Const.ImageOn)
                         {
