@@ -19,8 +19,8 @@ namespace WPM
     {
         //const string FileName = @"..\..\Settings.txt";
         const string Vers = "4.46";     //Номер версии
-        //const string BaseName = "int9999001rab";
-        const string BaseName = "int9999001ad1"; //debug_true
+        const string BaseName = "int9999001rab";
+        //const string BaseName = "int9999001ad3"; //debug_true
         Model SS;                       //через данный класс осуществляем общение с БД
         private ExPanel pnlCurrent;
         private int Screan;
@@ -2291,7 +2291,7 @@ namespace WPM
                 }
                 #endregion
             }
-            else if (dicBarcode["Type"] == "part" && SS.CurrentMode == Mode.Set)
+            else if (dicBarcode["Type"] == "part" && (SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.SampleSet))
             {
                 //отcканировали количество деталей
                 //Количество деталей
