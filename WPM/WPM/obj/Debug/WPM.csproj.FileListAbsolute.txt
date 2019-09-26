@@ -133,3 +133,12 @@ C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\
 C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
 C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.exe
 C:\Users\perov\Desktop\Временная\WPM\Изменяемая версия\WPM 4.46\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\bin\Debug\WPM.exe
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\bin\Debug\WPM.pdb
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\bin\Debug\System.Data.SqlClient.dll
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.FMain.resources
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.Properties.Resources.resources
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.exe
+C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.pdb

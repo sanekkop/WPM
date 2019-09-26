@@ -283,7 +283,7 @@ namespace WPM
             CCItem.Details = (int)(decimal)DT.Rows[0]["Details"];
             CCItem.Balance = (int)(decimal)DT.Rows[0]["Balance"];
 
-		
+
             //получим АдресВременныый из склада в АдресПеремещениии
             TextQuery =
                 "SELECT " +
@@ -308,6 +308,7 @@ namespace WPM
                 FExcStr = "Неверно! " + WhatUNeed();
                 return false;
             }
+
             string TextQuery =
                 "SELECT " +
                 "Units.parentext as ItemID, Goods.$Спр.Товары.ИнвКод as InvCode " +
@@ -418,7 +419,7 @@ namespace WPM
                     //отбор образцов окончен, выйдем в меню Выбора работы (образцы)
                     CurrentMode = Mode.ChoiseWorkSample;
                     OnChangeMode(new ChangeModeEventArgs(MM));
-                    
+
                 }
                 else
                 {
