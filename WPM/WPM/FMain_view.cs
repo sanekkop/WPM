@@ -2274,6 +2274,25 @@ namespace WPM
             lblAnswer2.Text      = "2 - недостача";
             pnlCurrent.Controls.Add(lblAnswer2);
 
+            Label lblAnswer3 = new Label();
+            lblAnswer3.Font = FontTahoma12Bold;
+            lblAnswer3.Name = "lblAnswer3";
+            lblAnswer3.TextAlign = ContentAlignment.TopLeft;
+            lblAnswer3.Location = new Point(100, 80 + 8);
+            lblAnswer3.Size = new Size(CurrWidth - 50, 20);
+            lblAnswer3.Text = "3 - отказ";
+            pnlCurrent.Controls.Add(lblAnswer3);
+
+            Label lblAnswer4 = new Label();
+            lblAnswer4.Font = FontTahoma12Bold;
+            lblAnswer4.Name = "lblAnswer4";
+            lblAnswer4.TextAlign = ContentAlignment.TopLeft;
+            lblAnswer4.Location = new Point(100, 100 + 10);
+            lblAnswer4.Size = new Size(CurrWidth - 50, 20);
+            lblAnswer4.Text = "4 - отказ без ШК";
+            lblAnswer4.Visible = false;
+            pnlCurrent.Controls.Add(lblAnswer4);
+
             
 
             //Поле для ввода количества
