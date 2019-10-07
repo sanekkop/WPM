@@ -1434,7 +1434,7 @@ namespace WPM
             DataGrid dgGoodsCC = new DataGrid();
             dgGoodsCC.Location = new Point(CurrWidth + 40, 0);
             dgGoodsCC.Name = "dgGoodsCC";
-            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 80, 165);
+            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 68, 170);
             dgGoodsCC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
             dgGoodsCC.DataSource = SS.ATTable;
             dgGoodsCC.RowHeadersVisible = false;

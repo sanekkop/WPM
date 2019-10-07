@@ -1003,7 +1003,6 @@ namespace WPM
                 string tmp = lblAction.Text;
                 lblAction.Text = "Подгружаю список...";
                 Refresh();
-                // дописать свою функцию
                 SS.RefreshAMT();
                 View();
                 //Вернем текущую строку
