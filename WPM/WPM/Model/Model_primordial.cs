@@ -8675,6 +8675,38 @@ namespace WPM
             MyReader.Close();
             return result;
         }
+        private bool GetDocByID(string IDDorID, out string IDDoc, out string DocType, out Dictionary<string, object> DataMap, bool ThisID)
+        {
+            bool result = false;
+            IDDoc = GetVoidID();
+            DocType = "";
+            DataMap = new Dictionary<string, object>();
+            if (ThisID)
+            {
+                //Если ID - расширенный, то переведем его в обычный, 9-и символьный
+                if (IDDorID.Length > 9)
+                {
+                    IDDorID = IDDorID.Substring(4);
+                }
+            }
+            if (!ExecuteQuery("SELECT IDDOC, IDDOCDEF, DATE_TIME_IDDOC, DOCNO, ISMARK, " + GetSynh("IDD").ToString() +
+                " FROM _1SJOURN (nolock) WHERE ISMARK = 0 and " + (ThisID ? "IDDOC" : GetSynh("IDD")) + "='" + IDDorID + "'"))
+            {
+                return false;
+            }
+            if (MyReader.Read())
+            {
+                IDDoc = MyReader[0].ToString();
+                DocType = To1CName(MyReader[1].ToString());
+                DataMap["ДатаДок"] = SQLToDateTime(MyReader[2].ToString());
+                DataMap["НомерДок"] = MyReader[3];
+                DataMap["ПометкаУдаления"] = MyReader[4];
+                DataMap["IDD"] = MyReader[5];
+                result = true;
+            }
+            MyReader.Close();
+            return result;
+        }
         /// <summary>
         /// Возвращает основные реквизиты документа по его ID-шнику
         /// </summary>
@@ -8688,7 +8720,11 @@ namespace WPM
         }
         public bool GetDoc(string IDD, out string IDDoc, out string DocType, out Dictionary<string, object> DataMap)
         {
-            return GetDoc(IDD, out IDDoc, out DocType, out DataMap, true);
+            return GetDoc(IDD, out IDDoc, out DocType, out DataMap, false);
+        }
+        public bool GetDocNew(string IDD, out string IDDoc, out string DocType, out Dictionary<string, object> DataMap)
+        {
+            return GetDocByID(IDD, out IDDoc, out DocType, out DataMap, true);
         }
         public bool GetSubjectDocs(string IDDoc, string DocType, out List<string> SubjectDocs)
         {
