@@ -115,3 +115,12 @@ E:\СашиныНаработки(Мои)\WPM 4.46 dev\WPM\bin\Debug\WPM.exe
 E:\СашиныНаработки(Мои)\WPM 4.46 dev\WPM\bin\Debug\WPM.pdb
 E:\СашиныНаработки(Мои)\WPM 4.46 dev\WPM\bin\Debug\System.Data.SqlClient.dll
 E:\СашиныНаработки(Мои)\WPM 4.46 dev\WPM\obj\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\bin\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\bin\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\bin\Debug\System.Data.SqlClient.dll
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\ResolveAssemblyReference.cache
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.FMain.resources
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.Properties.Resources.resources
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.pdb

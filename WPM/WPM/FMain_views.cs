@@ -2150,7 +2150,12 @@ namespace WPM
             //lblAction.Text = Obj.ExcStr;
             //lblAction.ForeColor = Color.Blue;
         }        //Выбор работы (приемка)
-        private void AcceptanceCross_review() { }
+
+        private void AcceptanceCross_review() 
+        {
+            DataGrid dgAC = pnlCurrent.GetDataGridByName("dgAcceptedCross");
+            dgAC.DataSource = SS.AcceptedCross;            
+        }
 
     
     }
