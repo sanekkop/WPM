@@ -260,7 +260,10 @@ namespace WPM
             }
             else if (key == Keys.D1 && Employer.CanAcceptance)
             {
-                DesireMode = Mode.Acceptance;
+                SS.OnReport(new ReportEventArgs("Задача выбрана..."));
+                JumpTo(new ChoiseWorkAcceptance(SS, this));
+                return;
+                //DesireMode = Mode.Acceptance;
             }
             else if (key == Keys.D2 && Employer.CanTransfer)
             {

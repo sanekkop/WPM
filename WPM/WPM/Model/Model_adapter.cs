@@ -19,7 +19,7 @@ namespace WPM
         public bool ChoiseWork(Mode DesireMode)
         {
             FExcStr = null;
-            if (!(FCurrentMode == Mode.ChoiseWork || FCurrentMode == Mode.ChoiseWorkShipping || FCurrentMode == Mode.ChoiseWorkSupply || FCurrentMode == Mode.ChoiseWorkSample))
+            if (!(FCurrentMode == Mode.ChoiseWork || FCurrentMode == Mode.ChoiseWorkShipping || FCurrentMode == Mode.ChoiseWorkSupply || FCurrentMode == Mode.ChoiseWorkSample || FCurrentMode == Mode.ChoiseWorkAcceptance))
             {
                 FExcStr = "Недопустимая команда в текущем режиме!";
                 return false;

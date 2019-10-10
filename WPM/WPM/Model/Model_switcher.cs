@@ -260,6 +260,8 @@ namespace WPM
                 case Mode.SetInicialization:
                     return RDSetInicialization(IDD);
 
+				case Mode.ChoiseWorkAcceptance:
+                    goto case Mode.Waiting;
                 default:
                     FExcStr = "Нет действий с данным документом в данном режиме!";
                     return false;

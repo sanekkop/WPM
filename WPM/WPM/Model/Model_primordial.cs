@@ -143,6 +143,7 @@ namespace WPM
         
         public string FPalletID;
         public string FBarcodePallet;
+		public DataTable AcceptedCross;        
         private RefSection FAdressZoneTransfer;
         private string FZoneName;
         private string FZoneID;

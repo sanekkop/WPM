@@ -33,6 +33,8 @@ namespace WPM
             NewStructModes.Add(Mode.RefillSetCorrect);
             NewStructModes.Add(Mode.SetTransfer);
             NewStructModes.Add(Mode.ItemCard);
+            NewStructModes.Add(Mode.ChoiseWorkAcceptance);
+            NewStructModes.Add(Mode.AcceptanceCross);
             
         } // FillNewStructList
         private void Reaction(string Barcode, Keys Key)

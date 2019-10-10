@@ -58,7 +58,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Model\Model_SampleSetCorrect.cs" />
+    <Compile Include="NewStruct\Acceptance\AcceptanceCross.cs" />
+	<Compile Include="Model\Model_SampleSetCorrect.cs" />
     <Compile Include="Model\Model_SampleSet.cs" />
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkSample.cs" />
     <Compile Include="EventArgs\ABaseModeEventArgs.cs" />
@@ -112,6 +113,7 @@
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkShipping.cs" />
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkSupply.cs" />
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkAddressCard.cs" />
+	<Compile Include="NewStruct\ChoiseWork\ChoiseWorkAcceptance.cs" />
     <Compile Include="NewStruct\ControlCollect\ControlCollect.cs" />
     <Compile Include="NewStruct\Loader-Refill\Loader.cs" />
     <Compile Include="NewStruct\Loader-Refill\LoaderChoise.cs" />
