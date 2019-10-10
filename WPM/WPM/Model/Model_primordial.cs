@@ -143,7 +143,7 @@ namespace WPM
         
         public string FPalletID;
         public string FBarcodePallet;
-        public DataTable AcceptedCross;
+		public DataTable AcceptedCross;        
         private RefSection FAdressZoneTransfer;
         private string FZoneName;
         private string FZoneID;
@@ -236,6 +236,7 @@ namespace WPM
         public string LabelControlCC;   //Представление сборочного листа
         public DataTable CCRP;  //Таблица сборочного листа
         public DataTable DownSituation; //Таблица показывает ситуацию на секторах
+        public DataTable ATTable;   //для табл. части АП
 
         public DataTable SampleTransfers;
 
@@ -2250,41 +2251,6 @@ namespace WPM
             FCurrentMode = Mode.SamplePut;
             return true;
         } //ToModeSamplePut()
-        private bool ToModeSampleSet()
-        {
-            FExcStr = null;
-            CCListSample = new DataTable();
-            CCListSample.Columns.Add("ID",      Type.GetType("System.String"));
-            CCListSample.Columns.Add("View",    Type.GetType("System.String"));
-
-            Dictionary<string, object> DataMapWrite = new Dictionary<string, object>();
-            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"] = ExtendID(Employer.ID, "Спр.Сотрудники");
-            if (BoxForSet != null)
-            {
-                DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход2"] = ExtendID(BoxForSet.ID, "Спр.Секции");
-            }
-            Dictionary<string, object> DataMapRead;
-            List<string> FieldList = new List<string>();
-            FieldList.Add("Спр.СинхронизацияДанных.ДатаРез1");
-            if (!ExecCommand("QuestPicingSample", DataMapWrite, FieldList, out DataMapRead))
-            {
-                return false;
-            }
-            if ((int)(decimal)DataMapRead["Спр.СинхронизацияДанных.ФлагРезультата"] == -3)
-            {
-                FExcStr = DataMapRead["Спр.СинхронизацияДанных.ДатаРез1"].ToString();
-                return false;
-            }
-            if ((int)(decimal)DataMapRead["Спр.СинхронизацияДанных.ФлагРезультата"] != 3)
-            {
-                FExcStr = "Не известный ответ робота... я озадачен...";
-                return false;
-            }
-            FExcStr = DataMapRead["Спр.СинхронизацияДанных.ДатаРез1"].ToString();
-
-            FCurrentMode = Mode.SampleSet;
-            return true;
-        }
         private bool ToModeControlCollect()
         {
             FExcStr         = null;
@@ -2627,7 +2593,21 @@ namespace WPM
         {
             LastGoodAdress = null;
             Const.Refresh();
-
+            Employer.Refresh();     // проверим не изменились ли галки на спуск/комплектацию
+            if (!Employer.CanDown  && !Employer.CanComplectation)
+            {
+                CurrentMode = Mode.ChoiseWork;         
+                FCurrentMode = CurrentMode;
+                OnChangeMode(new ChangeModeEventArgs(MM));
+                return true;
+            }
+            if (!Employer.CanDown && Employer.CanComplectation)
+            {
+                CurrentMode = Mode.ChoiseWork;
+                FCurrentMode = CurrentMode;
+                OnChangeMode(new ChangeModeEventArgs(MM));
+                return true;
+            }
             //Сам запрос
             string TextQuery = "select * from WPM_fn_GetChoiseDown()";
             if (!ExecuteWithRead(TextQuery, out DownSituation))
@@ -2659,6 +2639,7 @@ namespace WPM
         }
         public bool ToModeDown()
         {
+
             DocDown = new StrictDoc();
             string TextQuery = "select * from dbo.WPM_fn_ToModeDown(:Employer)";
             QuerySetParam(ref TextQuery, "Employer",    Employer.ID);
@@ -3718,69 +3699,6 @@ namespace WPM
                 return false;
             }
         }
-        private bool RSCSampleSet(string IDDorID, bool thisID)
-        {
-            if (!thisID)
-            {
-                Dictionary<string, object> DataMap;
-                if (IsSC(IDDorID, "Сотрудники"))
-                {
-                    return ToModeChoiseWork(IDDorID);
-                }
-                else if (IsSC(IDDorID, "Секции"))
-                {
-                    FExcStr = null;
-                    List<string> FieldList = new List<string>();
-                    FieldList.Add("ID");
-                    FieldList.Add("DESCR");
-                    if (!GetSCData(IDDorID, "Секции", FieldList, out DataMap))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    FExcStr = "Неверный тип справочника!";
-                    return false;
-                }
-
-                List<string> ForDelete = new List<string>();
-                foreach (DataRow dr in CCListSample.Rows)
-                {
-                    //КОМПЛЕКТАЦИЯ
-                    Dictionary <string, object> DataMapWrite = new Dictionary<string,object>();
-                    DataMapWrite["КонтрольНабора.АдресСобранного"]  = DataMap["ID"];
-                    //Пишем котроль набора!
-                    if ((SetDocData(dr["ID"].ToString(), "КонтрольНабора", DataMapWrite)))
-                    {
-                        //Если неудача, то просто оставляем запись в таблице
-                        ForDelete.Add(dr["ID"].ToString());
-                    }
-                }
-                //Удаляем
-                for (int i = 0; i < ForDelete.Count; i++)
-                {
-                    DataRow[] tmpDR = CCListSample.Select("ID = '" + ForDelete[i] + "'");
-                    tmpDR[0].Delete();
-                }
-
-                if (FExcStr == null)
-                {
-                    FExcStr = "Задан адрес " + DataMap["DESCR"].ToString();
-                }
-                return true;
-            }
-            else
-            {
-                string IDD;
-                if (!GetCCForIDPlace(IDDorID, out IDD))
-                {
-                    return false;
-                }
-                return RDSampleSet(IDD);
-
-            }
-        }
         private bool RSCAcceptanceItem(string IDD)
         {
             if (IsSC(IDD, "Секции"))
@@ -4648,81 +4566,82 @@ namespace WPM
 
             return ToModeSamplePut();
         }
-        private bool RDSampleSet(string IDD)
-        {
-            string IDDoc;
-            string DocType;
-            Dictionary <string, object> DataMap;
-            if (!GetDoc(IDD, out IDDoc, out DocType, out DataMap))
-            {
-                return false;
-            }
-            if (DocType != "КонтрольНабора")
-            {
-                FExcStr = "Неверный тип документа!";
-                return false;
-            }
+        //СТАРЫЙ РЕЖИМ
+        //private bool RDSampleSet(string IDD)
+        //{
+        //    string IDDoc;
+        //    string DocType;
+        //    Dictionary <string, object> DataMap;
+        //    if (!GetDoc(IDD, out IDDoc, out DocType, out DataMap))
+        //    {
+        //        return false;
+        //    }
+        //    if (DocType != "КонтрольНабора")
+        //    {
+        //        FExcStr = "Неверный тип документа!";
+        //        return false;
+        //    }
 
-            DataRow[] DR = CCListSample.Select("ID = '" + IDDoc + "'");
-            if (DR.Length > 0)
-            {
-                FExcStr = "Документ уже включен!";
-                return false;
-            }
+        //    DataRow[] DR = CCListSample.Select("ID = '" + IDDoc + "'");
+        //    if (DR.Length > 0)
+        //    {
+        //        FExcStr = "Документ уже включен!";
+        //        return false;
+        //    }
 
-            DataMap.Clear();
-            List<string> FieldList = new List<string>();
-            FieldList.Add("КонтрольНабора.Дата2");
-            FieldList.Add("КонтрольНабора.АдресСобранного");
-            FieldList.Add("КонтрольНабора.Сектор");
-            FieldList.Add("КонтрольНабора.ДокументОснование");
-            FieldList.Add("КонтрольНабора.НомерЛиста");
-            if (!GetDocData(IDDoc, "КонтрольНабора", FieldList, out DataMap))
-            {
-                return false;
-            }
-            if (SQL1S.IsVoidDate((DateTime)DataMap["КонтрольНабора.Дата2"]))
-            {
-                FExcStr = "Набор не завершен!";
-                return false;
-            }
-            if (SQL1S.GetVoidID() != DataMap["КонтрольНабора.АдресСобранного"].ToString())
-            {
-                FExcStr = "Адрес собранного уже задан!";
-                return false;
-            }
-            string NumberCC = DataMap["КонтрольНабора.НомерЛиста"].ToString();
-            string sector   = DataMap["КонтрольНабора.Сектор"].ToString();
-            string CBID     = DataMap["КонтрольНабора.ДокументОснование"].ToString();
-            DataMap.Clear();
-            FieldList.Clear();
-            FieldList.Add("DESCR");
-            if (!GetSCData(sector, "Секции", FieldList, out DataMap, true))
-            {
-                return false;
-            }
-            sector = DataMap["DESCR"].ToString().Trim();
+        //    DataMap.Clear();
+        //    List<string> FieldList = new List<string>();
+        //    FieldList.Add("КонтрольНабора.Дата2");
+        //    FieldList.Add("КонтрольНабора.АдресСобранного");
+        //    FieldList.Add("КонтрольНабора.Сектор");
+        //    FieldList.Add("КонтрольНабора.ДокументОснование");
+        //    FieldList.Add("КонтрольНабора.НомерЛиста");
+        //    if (!GetDocData(IDDoc, "КонтрольНабора", FieldList, out DataMap))
+        //    {
+        //        return false;
+        //    }
+        //    if (SQL1S.IsVoidDate((DateTime)DataMap["КонтрольНабора.Дата2"]))
+        //    {
+        //        FExcStr = "Набор не завершен!";
+        //        return false;
+        //    }
+        //    if (SQL1S.GetVoidID() != DataMap["КонтрольНабора.АдресСобранного"].ToString())
+        //    {
+        //        FExcStr = "Адрес собранного уже задан!";
+        //        return false;
+        //    }
+        //    string NumberCC = DataMap["КонтрольНабора.НомерЛиста"].ToString();
+        //    string sector   = DataMap["КонтрольНабора.Сектор"].ToString();
+        //    string CBID     = DataMap["КонтрольНабора.ДокументОснование"].ToString();
+        //    DataMap.Clear();
+        //    FieldList.Clear();
+        //    FieldList.Add("DESCR");
+        //    if (!GetSCData(sector, "Секции", FieldList, out DataMap, true))
+        //    {
+        //        return false;
+        //    }
+        //    sector = DataMap["DESCR"].ToString().Trim();
 
-            FieldList.Clear();
-            DataMap.Clear();
-            FieldList.Add("КонтрольРасходной.ДокументОснование");
-            if (!GetDocData(CBID, "КонтрольРасходной", FieldList, out DataMap))
-            {
-                return false;
-            }
-            string DaemondID = DataMap["КонтрольРасходной.ДокументОснование"].ToString();
-            DataMap.Clear();
-            if (!GetDoc(DaemondID, out DataMap))
-            {
-                return false;
-            }
+        //    FieldList.Clear();
+        //    DataMap.Clear();
+        //    FieldList.Add("КонтрольРасходной.ДокументОснование");
+        //    if (!GetDocData(CBID, "КонтрольРасходной", FieldList, out DataMap))
+        //    {
+        //        return false;
+        //    }
+        //    string DaemondID = DataMap["КонтрольРасходной.ДокументОснование"].ToString();
+        //    DataMap.Clear();
+        //    if (!GetDoc(DaemondID, out DataMap))
+        //    {
+        //        return false;
+        //    }
 
-            DataRow newRow = CCListSample.NewRow();
-            newRow["ID"]    = IDDoc;
-            newRow["View"]  = DataMap["НомерДок"].ToString() + " (" + ((DateTime)DataMap["ДатаДок"]).ToString("dd.MM") + ") СЕКЦИЯ: " + sector + "-" + NumberCC;
-            CCListSample.Rows.Add(newRow);
-            return true;
-        }
+        //    DataRow newRow = CCListSample.NewRow();
+        //    newRow["ID"]    = IDDoc;
+        //    newRow["View"]  = DataMap["НомерДок"].ToString() + " (" + ((DateTime)DataMap["ДатаДок"]).ToString("dd.MM") + ") СЕКЦИЯ: " + sector + "-" + NumberCC;
+        //    CCListSample.Rows.Add(newRow);
+        //    return true;
+        //}
         private bool RDControlCollect(string IDD)
         {
             Dictionary<string, object> DataDocAC;
@@ -4789,7 +4708,6 @@ namespace WPM
             WayBill.View = DataMap["НомерДок"].ToString() + " (" + ((DateTime)DataMap["ДатаДок"]).ToString("dd.MM.yy") + ")";
             return true;
         }
-
         private bool RBSample(string Barcode, Mode ToMode, int Screan)
         {
             string TextQuery;
@@ -8758,6 +8676,38 @@ namespace WPM
             MyReader.Close();
             return result;
         }
+        private bool GetDocByID(string IDDorID, out string IDDoc, out string DocType, out Dictionary<string, object> DataMap, bool ThisID)
+        {
+            bool result = false;
+            IDDoc = GetVoidID();
+            DocType = "";
+            DataMap = new Dictionary<string, object>();
+            if (ThisID)
+            {
+                //Если ID - расширенный, то переведем его в обычный, 9-и символьный
+                if (IDDorID.Length > 9)
+                {
+                    IDDorID = IDDorID.Substring(4);
+                }
+            }
+            if (!ExecuteQuery("SELECT IDDOC, IDDOCDEF, DATE_TIME_IDDOC, DOCNO, ISMARK, " + GetSynh("IDD").ToString() +
+                " FROM _1SJOURN (nolock) WHERE ISMARK = 0 and " + (ThisID ? "IDDOC" : GetSynh("IDD")) + "='" + IDDorID + "'"))
+            {
+                return false;
+            }
+            if (MyReader.Read())
+            {
+                IDDoc = MyReader[0].ToString();
+                DocType = To1CName(MyReader[1].ToString());
+                DataMap["ДатаДок"] = SQLToDateTime(MyReader[2].ToString());
+                DataMap["НомерДок"] = MyReader[3];
+                DataMap["ПометкаУдаления"] = MyReader[4];
+                DataMap["IDD"] = MyReader[5];
+                result = true;
+            }
+            MyReader.Close();
+            return result;
+        }
         /// <summary>
         /// Возвращает основные реквизиты документа по его ID-шнику
         /// </summary>
@@ -8772,6 +8722,10 @@ namespace WPM
         public bool GetDoc(string IDD, out string IDDoc, out string DocType, out Dictionary<string, object> DataMap)
         {
             return GetDoc(IDD, out IDDoc, out DocType, out DataMap, false);
+        }
+        public bool GetDocNew(string IDD, out string IDDoc, out string DocType, out Dictionary<string, object> DataMap)
+        {
+            return GetDocByID(IDD, out IDDoc, out DocType, out DataMap, true);
         }
         public bool GetSubjectDocs(string IDDoc, string DocType, out List<string> SubjectDocs)
         {

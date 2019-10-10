@@ -113,7 +113,7 @@ namespace WPM
             btnSamples.Location = new Point(CurrWidth < 320 ? 122 : 162, 19);
             btnSamples.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
             btnSamples.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
-            btnSamples.ForeColor = SS.Employer.CanLayOutSample && SS.Employer.CanGiveSample ? Color.Black : Color.DarkGray;
+            btnSamples.ForeColor = SS.Employer.CanLayOutSample || SS.Employer.CanGiveSample ? Color.Black : Color.DarkGray;
             btnSamples.BackColor = Color.LightGray;
             pnlCurrent.Controls.Add(btnSamples);
             #endregion
@@ -2024,9 +2024,8 @@ namespace WPM
             lblItemTest.Text = Obj.Item.Name;
             pnlCurrent.Controls.Add(lblItemTest);*/
 
-        }
-
-        private void ChoiseWorkAcceptance_view()
+        } 
+private void ChoiseWorkAcceptance_view()
         {
             lblState.Text = "Выбор работы (приемка)";
             ChoiseWorkAcceptance Obj = SS.MM as ChoiseWorkAcceptance;

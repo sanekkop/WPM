@@ -16,7 +16,7 @@ namespace WPM
         public bool CompleteCorrectSample(int Choise, int CountCorrect)
         {
             //Заглушка, рефрешим позицию, чтобы не было проблем, если оборвется связь
-            if (!RDSampleSet(DocSet.ID, null))
+            if (!RDSampleSet(DocSet.ID, CCItem.AdressID))
             {
                 FCurrentMode = Mode.SampleSetCorrect;
                 return false;

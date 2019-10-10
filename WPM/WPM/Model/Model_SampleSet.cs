@@ -71,7 +71,7 @@ namespace WPM
             string TextQuery;
             //Заглушка, рефрешим позицию, чтобы не было проблем, если оборвется связь
             int CountFact = CCItem.CountFact;
-            if (!RDSampleSet(DocSet.ID, null))
+            if (!RDSampleSet(DocSet.ID, CCItem.AdressID))
             {
                 CCItem.CountFact = CountFact;
                 return false;
@@ -183,7 +183,7 @@ namespace WPM
             string IDDoc;
             string DocType;
             Dictionary<string, object> DataMap;
-            if (!GetDoc(IDD, out IDDoc, out DocType, out DataMap))
+            if (!GetDocNew(IDD, out IDDoc, out DocType, out DataMap))
             {
                 return false;
             }
@@ -196,28 +196,28 @@ namespace WPM
             string TextQuery =
                 "DECLARE @curdate DateTime; " +
                     "SELECT @curdate = DATEADD(DAY, 1 - DAY(curdate), curdate) FROM _1ssystem (nolock); " +
-                "SELECT " +
+                "SELECT TOP 1" +
                     "journ.iddoc as IDDOC, " +
                     "journ.docno as DocNo, " +
                     "journ.date_time_iddoc as DateDoc, " +
-                    "DocAT.$АдресПеремещение.Товар as ID, " +
-                    "DocAT.lineno_ as LINENO_, " +
+                    "DocATStrings.$АдресПеремещение.Товар as ID, " +
+                    "DocATStrings.lineno_ as LINENO_, " +
                     "Goods.$Спр.Товары.КоличествоДеталей as Details, " +
-                    "DocAT.$АдресПеремещение.Адрес0 as Adress0, " +
-                    "min(Goods.descr) as ItemName, " +
-                    "min(Goods.$Спр.Товары.ИнвКод ) as InvCode, " +
-                    "sum(DocAT.$АдресПеремещение.Количество ) as Count, " +
-                    "DocATStrings.$АдресПеремещение.КолСтрок as Rows, " +
-                    "min(Sections.descr) as AdressName, " +
+                    "DocATStrings.$АдресПеремещение.Адрес0 as Adress0, " +
+                    "Goods.descr as ItemName, " +
+                    "Goods.$Спр.Товары.ИнвКод as InvCode, " +
+                    "DocATStrings.$АдресПеремещение.Количество as Count, " +
+                    "DocAT.$АдресПеремещение.КолСтрок as Rows, " +
+                    "Sections.descr as AdressName, " +
                     "ISNULL(AOT.Balance, 0) as Balance " +
                 "FROM " +
                     "_1sjourn as journ (nolock) " +
-                    "LEFT JOIN DT4327 as DocAT (nolock) ON DocAT.iddoc = journ.iddoc " +
-                    "LEFT JOIN DH4327 as DocATStrings (nolock)ON DocAT.iddoc = DocATStrings.iddoc " +
+                    "LEFT JOIN DH4327 as DocAT (nolock)ON DocAT.iddoc = journ.iddoc " +
+                    "LEFT JOIN DT4327 as DocATStrings (nolock) ON DocAT.iddoc = DocATStrings.iddoc " +
                     "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                        "ON Goods.ID = DocAT.$АдресПеремещение.Товар " +
+                        "ON Goods.ID = DocATStrings.$АдресПеремещение.Товар " +
                     "LEFT JOIN $Спр.Секции as Sections (nolock) " +
-                        "ON Sections.ID = DocAT.$АдресПеремещение.Адрес0 " +
+                        "ON Sections.ID = DocATStrings.$АдресПеремещение.Адрес0 " +
                     "LEFT JOIN ( " +
                         "select " +
                             "RegAOT.$Рег.АдресОстаткиТоваров.Товар as item, " +
@@ -231,15 +231,13 @@ namespace WPM
                             "and $Рег.АдресОстаткиТоваров.Состояние = 2 " +
                         "group by RegAOT.$Рег.АдресОстаткиТоваров.Товар , RegAOT.$Рег.АдресОстаткиТоваров.Адрес " +
                         ") as AOT " +
-                        "ON AOT.item = DocAT.$АдресПеремещение.Товар and AOT.adress = DocAT.$АдресПеремещение.Адрес0 " +
+                        "ON AOT.item = DocATStrings.$АдресПеремещение.Товар and AOT.adress = DocATStrings.$АдресПеремещение.Адрес0 " +
                 "WHERE " +
                     "DocAT.iddoc = :Doc " +
-                    (AdressID == null ? "" : "and DocAT.$АдресПеремещение.Адрес0 = :Adress ") +
+                    (AdressID == null ? "" : "and DocATStrings.$АдресПеремещение.Адрес0 = :Adress ") +
                     "and journ.ismark = 0 " +
-                    "and DocATStrings.$АдресПеремещение.ТипДокумента = '3' " +
-                    "and DocAT.$АдресПеремещение.Дата1 = :EmptyDate " +
-                "GROUP BY journ.iddoc, journ.docno, journ.date_time_iddoc, DocAT.$АдресПеремещение.Товар ,LINENO_ ,  Goods.$Спр.Товары.КоличествоДеталей , DocAT.$АдресПеремещение.Адрес0 , DocATStrings.$АдресПеремещение.КолСтрок , Balance " +
-                "ORDER BY max(DocAT.$АдресПеремещение.Дата0 ), max(DocAT.$АдресПеремещение.Время0 )";
+                    "and DocAT.$АдресПеремещение.ТипДокумента = '3' " +
+                    "and DocATStrings.$АдресПеремещение.Дата1 = :EmptyDate ";
             SQL1S.QuerySetParam(ref TextQuery, "Doc", IDD);
             SQL1S.QuerySetParam(ref TextQuery, "EmptyDate", SQL1S.GetVoidDate());
             SQL1S.QuerySetParam(ref TextQuery, "Warehouse", Const.MainWarehouse);
@@ -283,7 +281,7 @@ namespace WPM
             CCItem.Details = (int)(decimal)DT.Rows[0]["Details"];
             CCItem.Balance = (int)(decimal)DT.Rows[0]["Balance"];
 
-		
+
             //получим АдресВременныый из склада в АдресПеремещениии
             TextQuery =
                 "SELECT " +
@@ -308,6 +306,7 @@ namespace WPM
                 FExcStr = "Неверно! " + WhatUNeed();
                 return false;
             }
+
             string TextQuery =
                 "SELECT " +
                 "Units.parentext as ItemID, Goods.$Спр.Товары.ИнвКод as InvCode " +
@@ -418,7 +417,7 @@ namespace WPM
                     //отбор образцов окончен, выйдем в меню Выбора работы (образцы)
                     CurrentMode = Mode.ChoiseWorkSample;
                     OnChangeMode(new ChangeModeEventArgs(MM));
-                    
+
                 }
                 else
                 {

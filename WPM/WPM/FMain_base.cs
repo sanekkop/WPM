@@ -945,6 +945,108 @@ namespace WPM
                 DynamicButtonOnClick(pnlCurrent.GetControlByName("btnOk"), null);
             }
         }
+        private void RKSampleSet(Keys Key, Control currControl)
+        {
+            if (Key == Keys.Escape)
+            {
+                if (!SS.ReactionCancel())
+                {
+                    lblAction.Text = SS.ExcStr;
+                }
+                else
+                {
+                    View();
+                }
+                return;
+            }
+            
+            if (Screan == 0 && (Key == Keys.Enter || Key == Keys.F14 || Key == Keys.F2 || Key == Keys.F1 || Key.GetHashCode() == 189) && SS.CurrentAction == ActionSet.EnterCount)
+            {
+                int tmpCount;
+                try
+                {
+                    string tmpTxt = pnlCurrent.GetTextBoxByName("tbCount").Text;
+                    if (tmpTxt.Substring(tmpTxt.Length - 1, 1) == "-")
+                    {
+                        tmpTxt = tmpTxt.Substring(0, tmpTxt.Length - 1);
+                    }
+                    tmpCount = Convert.ToInt32(tmpTxt);
+                }
+                catch
+                {
+                    tmpCount = 0;
+                }
+                if (SS.EnterCountSampleSet(tmpCount))
+                {
+                    View();
+                    GoodDone();
+                    pnlCurrent.GetTextBoxByName("tbCount").Text = "";
+                }
+                else
+                {
+                    View();
+                    lblAction.Text = SS.ExcStr;
+                    BadDone();
+                }
+            }
+            if (Key == Keys.Right && Screan == 0)
+            {
+                if (!SS.Employer.CanRoute)
+                {
+                    string appendix = " (нельзя посмотреть маршрут)";
+                    if (lblAction.Text.IndexOf(appendix) < 0)
+                    {
+                        lblAction.Text = lblAction.Text + appendix;
+                    }
+                    return;
+                }
+                string tmp = lblAction.Text;
+                lblAction.Text = "Подгружаю список...";
+                Refresh();
+                SS.RefreshAMT();
+                View();
+                //Вернем текущую строку
+                DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
+                try
+                {
+                    DataGridCell currCell = dgGoodsCC.CurrentCell;
+                    currCell.ColumnNumber = 2;
+                    dgGoodsCC.CurrentCell = currCell;
+                    dgGoodsCC.CurrentRowIndex = CurrLineSet;
+                }
+                catch
+                {
+                }
+                pnlCurrent.Sweep(-1);
+                Screan -= 1;
+                dgGoodsCC.Focus();
+                lblAction.Text = tmp;
+            }
+            else if (Key == Keys.Left && Screan == -1)
+            {
+                DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
+                CurrLineSet = dgGoodsCC.CurrentRowIndex;
+                pnlCurrent.Sweep(1);
+                Screan += 1;
+                TextBox tbCount = pnlCurrent.GetTextBoxByName("tbCount");
+                if (tbCount.Visible)
+                {
+                    pnlCurrent.GetControlByName("tbCount").Focus();
+                }
+            }
+            if (Screan == 0 && Key == Keys.D9 && SS.CurrentAction != ActionSet.EnterCount && !SS.DocSet.Special)
+            {
+                if (SS.Const.StopCorrect)
+                {
+                    //StopCorrect - ВРЕМЕНННАЯ ЗАГЛУШКА
+                    lblAction.Text = "Возможность корректировать отключена!";
+                    return;
+                }
+                SS.ToModeSampleSetCorrect();
+                BadVoice();
+                View();
+            }
+        }
         private void RKSamplePut(Keys Key, Control currControl)
         {
             int cri = -1;
@@ -1335,6 +1437,62 @@ namespace WPM
                 }
             }
         }
+        private void RKSampleSetCorrect(Keys Key, Control currControl)
+        {
+            if (Key == Keys.Escape || (Key == Keys.D0 && ChoiseCorrect == 0))
+            {
+                if (!SS.ReactionCancel())
+                {
+                    lblAction.Text = SS.ExcStr;
+                }
+                else
+                {
+                    View();
+                }
+                return;
+            }
+            if (ChoiseCorrect == 0)
+            {
+                ChoiseCorrect = Helper.WhatInt(Key);
+                if (ChoiseCorrect > 0 && ChoiseCorrect < 3)
+                {
+                    lblAction.Text = "Укажите количество в штуках";
+                }
+                else
+                {
+                    ChoiseCorrect = 0;
+                }
+                ReView();
+            }
+            else if (Key == Keys.Enter || Key == Keys.F14 || Key == Keys.F2 || Key == Keys.F1 || Key.GetHashCode() == 189)
+            {
+                int tmpCount;
+                try
+                {
+                    string tmpTxt = pnlCurrent.GetTextBoxByName("tbCount").Text;
+                    if (tmpTxt.Substring(tmpTxt.Length - 1, 1) == "-")
+                    {
+                        tmpTxt = tmpTxt.Substring(0, tmpTxt.Length - 1);
+                    }
+                    tmpCount = Convert.ToInt32(tmpTxt);
+                }
+                catch
+                {
+                    tmpCount = 0;
+                }
+                lblAction.Text = "Обработка корректировки...";
+                Refresh();
+                if (SS.CompleteCorrectSample(ChoiseCorrect, tmpCount))
+                {
+                    View();
+                    GoodVoice();
+                }
+                else
+                {
+                    lblAction.Text = SS.ExcStr;
+                }
+            }
+        } //RKSampleSetCorrect
         private void RKSetCorrect(Keys Key, Control currControl)
         {
             if (Key == Keys.Escape || (Key == Keys.D0 && ChoiseCorrect == 0))
@@ -1411,7 +1569,10 @@ namespace WPM
                 lblAction.Text = "Обновляю список...";
                 Refresh();
                 SS.ToModeChoiseDown();
-                ModeChoiseDownView();
+                if (SS.Employer.CanDown && (SS.Employer.CanComplectation || !SS.Employer.CanComplectation))
+                {
+                    ModeChoiseDownView();
+                }
             }
 
             int Choise = Helper.WhatInt(Key);
@@ -1891,6 +2052,12 @@ namespace WPM
                 case Mode.ChoiseInventory:
                     RKChoiseInventory(Key, currControl);
                     break;
+                case Mode.SampleSet:
+                    RKSampleSet(Key, currControl);
+                    break;
+                case Mode.SampleSetCorrect:
+                    RKSampleSetCorrect(Key, currControl);
+                    break;
                 case Mode.SamplePut:
                     RKSamplePut(Key, currControl);
                     break;
@@ -2020,7 +2187,7 @@ namespace WPM
                 return;
             }
             Dictionary<string, string> dicBarcode = Helper.DisassembleBarcode(strBarcode);
-            if ((SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Set) && Screan != 0)
+            if ((SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.SampleSet) && Screan != 0)
             {
                 lblAction.Text = "ШК не работают на данном экране!";
                 return;
@@ -2123,7 +2290,7 @@ namespace WPM
                 }
                 #endregion
             }
-            else if (dicBarcode["Type"] == "part" && SS.CurrentMode == Mode.Set)
+            else if (dicBarcode["Type"] == "part" && (SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.SampleSet))
             {
                 //отcканировали количество деталей
                 //Количество деталей
@@ -2184,7 +2351,7 @@ namespace WPM
                         }
                     }
                 }
-                if (SS.CurrentMode == Mode.SamplePut)
+                if (SS.CurrentMode == Mode.SampleSet || SS.CurrentMode == Mode.SamplePut)
                 {
                     lblAction.Text = SS.ExcStr;
                 }
@@ -2193,7 +2360,7 @@ namespace WPM
                 {
                     lblAction.Text = SS.ExcStr;
                 }
-                else if (SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.Down || SS.CurrentMode == Mode.FreeDownComplete || SS.CurrentMode == Mode.NewComplectation || SS.CurrentMode == Mode.NewComplectationComplete)
+                else if (SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.Down || SS.CurrentMode == Mode.FreeDownComplete || SS.CurrentMode == Mode.NewComplectation || SS.CurrentMode == Mode.NewComplectationComplete || SS.CurrentMode == Mode.SampleSet)
                 {
                     GoodDone();
                     return;

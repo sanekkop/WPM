@@ -590,6 +590,66 @@ namespace WPM
                 //lblDescr.Text = txt;
             }
         }
+        private void ModeSampleSetReView()
+        {
+            lblState.Text = SS.DocSet.View; //Обновляем главную надпись
+            DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
+            dgGoodsCC.DataSource = SS.ATTable;
+
+
+            pnlCurrent.GetLabelByName("lblPrevious").Text = SS.PreviousAction;
+            Label lblInvCode = pnlCurrent.GetLabelByName("lblInvCode");
+            Label lblAdress = pnlCurrent.GetLabelByName("lblAdress");
+            Label lblCount = pnlCurrent.GetLabelByName("lblCount");
+            TextBox tbCount = pnlCurrent.GetTextBoxByName("tbCount");
+            Label lblPrevious = pnlCurrent.GetLabelByName("lblPrevious");
+            Label lblHeader = pnlCurrent.GetLabelByName("lblHeader");
+            Label lblItem = pnlCurrent.GetLabelByName("lblItem");
+            Label lblBox = pnlCurrent.GetLabelByName("lblBox");
+            Label lblHeaderPrice = pnlCurrent.GetLabelByName("lblHeaderPrice");
+            Label lblHeaderBalance = pnlCurrent.GetLabelByName("lblHeaderBalance");
+            Label lblHeaderSum = pnlCurrent.GetLabelByName("lblHeaderSum");
+            Label lblDetailsCount = pnlCurrent.GetLabelByName("lblDetailsCount");
+            PictureBox pbPhoto = pnlCurrent.GetPictureBoxByName("pbPhoto");
+
+            lblInvCode.ForeColor = Color.Black;
+            lblAdress.ForeColor = Color.Black;
+            lblCount.ForeColor = Color.Black;
+            lblBox.ForeColor = Color.Black;
+
+            lblPrevious.Text = SS.PreviousAction;
+            lblHeader.Text = "Строка " + SS.CCItem.CurrLine.ToString() + " из " + SS.DocSet.Rows.ToString() + " (ост " + SS.AllSetsRow.ToString() + ")";
+            //lblHeaderPrice.Text = "Цена: " + SS.CCItem.Price.ToString().Trim();
+            lblHeaderBalance.Text = "Ост-ок " + SS.CCItem.Balance.ToString().Trim();
+            //lblHeaderSum.Text = "Сумма: " + SS.DocSet.Sum.ToString();
+            lblInvCode.Text = SS.CCItem.InvCode.Trim();
+            lblAdress.Text = SS.CCItem.AdressName;
+            lblItem.Text = SS.CCItem.Name;
+            lblBox.Text = SS.DocSet.Box;
+            //lblCount.Text       = SS.CCItem.OKEI2Count.ToString() + " " + SS.CCItem.OKEI2.Trim() + " по " + SS.CCItem.OKEI2Coef.ToString();
+            lblCount.Text = SS.CCItem.Count.ToString() + " шт по 1";
+            lblDetailsCount.Text = "Деталей: " + SS.CCItem.Details.ToString();
+            lblAction.Text = SS.ExcStr;
+            switch (SS.CurrentAction)
+            {
+                case ActionSet.ScanAdress:
+                    tbCount.Visible = false;
+                    lblAdress.ForeColor = Color.Blue;
+                    break;
+
+                case ActionSet.ScanItem:
+                    pbPhoto.Visible = false;
+                    lblInvCode.ForeColor = Color.Blue;
+                    break;
+
+                case ActionSet.EnterCount:
+                    lblCount.ForeColor = Color.Blue;
+                    tbCount.Visible = true;
+                    tbCount.BringToFront();
+                    tbCount.Focus();
+                    break;
+            }
+        }
         private void ModeSetReView()
         {
             lblState.Text = SS.DocSet.View; //Обновляем главную надпись
@@ -615,7 +675,7 @@ namespace WPM
             lblAdress.ForeColor     = Color.Black;
             lblCount.ForeColor      = Color.Black;
             lblBox.ForeColor        = Color.Black;
-
+            
             lblPrevious.Text    = SS.PreviousAction;
             lblHeader.Text      = "Строка " + SS.CCItem.CurrLine.ToString() + " из " + SS.DocSet.Rows.ToString() + " (ост " + SS.AllSetsRow.ToString() + ")";
             lblHeaderPrice.Text = "Цена: " + SS.CCItem.Price.ToString().Trim();
@@ -671,16 +731,34 @@ namespace WPM
                 //пока не сделан выбор - все тлен
                 return;
             }
-            for (int j = 0; j < 5; j++)
+            if (SS.CurrentMode == Mode.SetCorrect)
             {
-                Label lblTmp = pnlCurrent.GetLabelByName("lblAnswer" + j.ToString());
-                if (j == ChoiseCorrect)
+                for (int j = 0; j < 5; j++)
                 {
-                    lblTmp.ForeColor = Color.Green;
+                    Label lblTmp = pnlCurrent.GetLabelByName("lblAnswer" + j.ToString());
+                    if (j == ChoiseCorrect)
+                    {
+                        lblTmp.ForeColor = Color.Green;
+                    }
+                    else
+                    {
+                        lblTmp.Visible = false;
+                    }
                 }
-                else
+            }
+            else if (SS.CurrentMode == Mode.SampleSetCorrect)   // поскольку в режиме набора образцов отсутсвует "отказ"
+            {
+                for (int j = 0; j < 3; j++)
                 {
-                    lblTmp.Visible = false;
+                    Label lblTmp = pnlCurrent.GetLabelByName("lblAnswer" + j.ToString());
+                    if (j == ChoiseCorrect)
+                    {
+                        lblTmp.ForeColor = Color.Green;
+                    }
+                    else
+                    {
+                        lblTmp.Visible = false;
+                    }
                 }
             }
             pnlCurrent.GetLabelByName("lblKey1").Visible = true;
@@ -899,6 +977,13 @@ namespace WPM
                     break;
                 case Mode.SampleInventory:
                     ModeInventoryReView();
+                    break;
+                case Mode.SampleSet:
+                    lblState.Text = "Набор образцов";
+                    ModeSampleSetReView();
+                    break;
+                case Mode.SampleSetCorrect:
+                    ModeSetCorrectReView();
                     break;
                 case Mode.SamplePut:
                     lblState.Text = "Выкладка образцов (" + SS.SampleItems.Rows.Count.ToString() + ")";

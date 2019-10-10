@@ -461,10 +461,36 @@ namespace WPM
             }
             return true;
         }
+        public bool RefreshAMT()
+        {
+            string TextQuery =
+                "SELECT " +
+                    "DocAT.lineno_ as Number, " +
+                    "Goods.SP1036 as InvCode, " +
+                    "Sections.descr as Adress, " +
+                    "DocAT.SP4313 as Count " +
+                "FROM " +	
+                    "_1sjourn as journ (nolock) " +
+                    "INNER JOIN DT$АдресПеремещение as DocAT (nolock)" +
+	                    "ON journ.iddoc = DocAT.iddoc " +
+                    "INNER JOIN $Спр.Товары as Goods (nolock) " +
+                        "ON Goods.id = DocAT.SP4312 " +
+                    "INNER JOIN $Спр.Секции as Sections (nolock) " +
+                        "ON Sections.id = DocAT.$АдресПеремещение.Адрес0 " +
+                "WHERE " +
+                    "DocAT.iddoc = :Doc ";
+
+            SQL1S.QuerySetParam(ref TextQuery, "Doc", DocSet.ID);
+            if (!ExecuteWithRead(TextQuery, out ATTable))
+            {
+                return false;
+            }
+            return true;
+        } // RefreshAMT()
         public bool RefreshCCRP()
         {
             RefreshRowSum();
-
+            
             string TextQuery =
                 "select " +
                     "DocCC.lineno_ as Number, " +

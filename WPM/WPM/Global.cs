@@ -4,11 +4,11 @@
     {
         None, Waiting, ChoiseWork, Acceptance, AcceptedItem, TransferInicialize, Transfer,
         ChoiseInventory, Inventory, SampleInventory, SamplePut, NewInventory, NewChoiseInventory,
-        SampleSet, ControlCollect, HarmonizationInicialize, Harmonization, HarmonizationPut, LoadingInicialization, Loading,
+        SampleSet,SampleSetCorrect, ControlCollect, HarmonizationInicialize, Harmonization, HarmonizationPut, LoadingInicialization, Loading,
         ChoiseWorkShipping,ChoiseWorkSample,ChoiseWorkAddressCard, Set, SetInicialization, SetCorrect, SetComplete, ChoiseDown, Down, DownComplete,
         FreeDownComplete, NewComplectation, NewComplectationComplete, SetSelfContorl, ChoiseWorkSupply,ItemCard,
         LoaderChoise, RefillChoise, LoaderChoiseLift, Loader, RefillSet, RefillSetComplete, RefillLayout, RefillLayoutComplete, RefillSetCorrect,
-        SetTransfer, ChoiseWorkAcceptance, AcceptanceCross 
+		SetTransfer, ChoiseWorkAcceptance, AcceptanceCross 
 
     }
 
