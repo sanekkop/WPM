@@ -947,7 +947,7 @@ namespace WPM
         }
         private void RKSampleSet(Keys Key, Control currControl)
         {
-            if (Key == Keys.Escape)
+            if (Key == Keys.Escape && (SS.CurrentAction != ActionSet.Waiting))
             {
                 if (!SS.ReactionCancel())
                 {
