@@ -1560,6 +1560,16 @@ namespace WPM
             lblDetailsCount.Size = new Size(80, 30);
             pnlCurrent.Controls.Add(lblDetailsCount);
             lblDetailsCount.BringToFront();
+            
+			Label lblScanPrinter = new Label();
+            lblScanPrinter.Font = FontTahoma16Bold;
+            lblScanPrinter.Name = "lblScanPrinter";
+            lblScanPrinter.TextAlign = ContentAlignment.TopCenter;
+            lblScanPrinter.Location = new Point(15,155);
+            lblScanPrinter.Size = new Size(280, 31);
+            lblScanPrinter.BackColor = Color.Yellow;
+            pnlCurrent.Controls.Add(lblScanPrinter);
+            lblScanPrinter.BringToFront();
 
             //Поле для ввода количества
             TextBox tbCount = new TextBox();

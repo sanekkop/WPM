@@ -156,7 +156,8 @@ namespace WPM
             //если в доке больше нет не отобранных, оповестим 1с о завершении набора образцов
             if (AllSetsRow == 0)
             {
-                FExcStr = "Отсканируйте принтер";
+                FExcStr = "";
+                CurrentAction = ActionSet.Waiting;
             }
             return true;
         } //CompleteLineSampleSet
