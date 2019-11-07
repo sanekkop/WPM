@@ -110,8 +110,6 @@ namespace WPM
                     return ToModeChoiseWork();
                 case Mode.SampleSetCorrect:
                     return ToModeSampleSet();
-                case Mode.ControlCollect:
-                    return ToModeChoiseWork();
                 case Mode.HarmonizationInicialize:
                     return ToModeChoiseWork();
                 case Mode.Harmonization:
@@ -251,9 +249,6 @@ namespace WPM
                 case Mode.SampleSet:
                     return RDSampleSet(IDD, null);
 
-                case Mode.ControlCollect:
-                    return RDControlCollect(IDD);
-
                 case Mode.LoadingInicialization:
                     return RDLoadingInicialization(IDD);
 
@@ -360,9 +355,6 @@ namespace WPM
 
                 case Mode.HarmonizationPut:
                     return RBHarmonization(Barcode, Mode.HarmonizationPut);
-
-                case Mode.ControlCollect:
-                    return RBControlCollect(Barcode);
 
                 default:
                     FExcStr = "Нет действий с этим штирхкодом в данном режиме!";

@@ -2025,7 +2025,8 @@ namespace WPM
             pnlCurrent.Controls.Add(lblItemTest);*/
 
         } 
-private void ChoiseWorkAcceptance_view()
+        
+        private void ChoiseWorkAcceptance_view()
         {
             lblState.Text = "Выбор работы (приемка)";
             ChoiseWorkAcceptance Obj = SS.MM as ChoiseWorkAcceptance;
@@ -2154,6 +2155,96 @@ private void ChoiseWorkAcceptance_view()
         {
             DataGrid dgAC = pnlCurrent.GetDataGridByName("dgAcceptedCross");
             dgAC.DataSource = SS.AcceptedCross;            
+        }
+
+        private void ControlCollect_view()
+        {
+            ControlCollect Obj = SS.MM as ControlCollect;
+
+            DataGridTextBoxColumn columnStyle;
+            DataGridTableStyle dgts;
+
+            DataGrid dgGoodsCC = new DataGrid();
+            dgGoodsCC.Location = new Point(2, 0);
+            dgGoodsCC.Name = "dgGoodsCC";
+            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 6, 165);
+            dgGoodsCC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
+            dgGoodsCC.DataSource = Obj.GoodsCC;
+            dgGoodsCC.RowHeadersVisible = false;
+            dgGoodsCC.Enabled = false;
+            #region Styles
+            dgGoodsCC.TableStyles.Clear();
+            dgts = new DataGridTableStyle();
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "№";
+            columnStyle.MappingName = "Number";
+            columnStyle.Width = CurrWidth < 320 ? 25 : 40;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Артикул";
+            columnStyle.MappingName = "Artikul";
+            columnStyle.Width = CurrWidth < 320 ? 48 : 70;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Наименование";
+            columnStyle.MappingName = "NameItem";
+            columnStyle.Width = CurrWidth < 320 ? 120 : 150;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Кол-во";
+            columnStyle.MappingName = "Count";
+            columnStyle.Width = CurrWidth < 320 ? 30 : 50;
+            dgts.GridColumnStyles.Add(columnStyle);
+           
+            dgGoodsCC.TableStyles.Add(dgts);
+            #endregion
+            pnlCurrent.Controls.Add(dgGoodsCC);
+
+            lblAction.Text = "Ожидание команды";
+        }        //контроль
+
+        private void ControlCollect_review()
+        {
+            ControlCollect Obj = SS.MM as ControlCollect;
+
+            lblState.Text = "";
+            if (Obj.LabelControlCC != null)
+            {
+                lblState.Text = Obj.LabelControlCC;
+            }
+            DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
+            dgGoodsCC.DataSource = Obj.GoodsCC;
+            if (Obj.GoodsCC.Rows.Count == 0)
+            {
+                return;
+            }
+
+            //Снимаем выделение с предыдущей и следующей строки
+            if (Obj.GoodsCC.Rows.Count == 1)
+            {
+                //ничего не делаем
+            }
+            else if (Obj.IndexTableItem == 0)
+            {
+                dgGoodsCC.UnSelect(Obj.GoodsCC.Rows.Count - 1);
+                dgGoodsCC.UnSelect(1);
+
+            }
+            else if (Obj.IndexTableItem == Obj.GoodsCC.Rows.Count - 1)
+            {
+                dgGoodsCC.UnSelect(0);
+                dgGoodsCC.UnSelect(Obj.IndexTableItem - 1);
+
+            }
+            else if (Obj.IndexTableItem > 0)
+            {
+                dgGoodsCC.UnSelect(Obj.IndexTableItem + 1);
+                dgGoodsCC.UnSelect(Obj.IndexTableItem - 1);
+            }
+
+            //Выделяем текущую строку
+            dgGoodsCC.CurrentRowIndex = Obj.IndexTableItem;
+            dgGoodsCC.Select(dgGoodsCC.CurrentRowIndex);
         }
 
     

@@ -2251,22 +2251,7 @@ namespace WPM
             FCurrentMode = Mode.SamplePut;
             return true;
         } //ToModeSamplePut()
-        private bool ToModeControlCollect()
-        {
-            FExcStr         = null;
-            ControlCC       = null;
-            LabelControlCC  = null;
-            GoodsCC = new DataTable();
-            GoodsCC.Columns.Add("Number",           Type.GetType("System.Int32"));
-            GoodsCC.Columns.Add("NumberInDaemond",  Type.GetType("System.Int32"));
-            GoodsCC.Columns.Add("InvCode",          Type.GetType("System.String"));
-            GoodsCC.Columns.Add("Adress",           Type.GetType("System.String"));
-            GoodsCC.Columns.Add("Count",            Type.GetType("System.Int32"));
-            GoodsCC.Columns.Add("Descr",            Type.GetType("System.String"));
-            
-            FCurrentMode = Mode.ControlCollect;
-            return true;
-        }
+       
         private bool ToModeHarmonizationInicialize()
         {
             DataTable DT;
@@ -2522,7 +2507,8 @@ namespace WPM
             string TextQuery = 
                 "SELECT " + 
                     "Main.AdressCounter as AdressCounter, " +
-                    "Main.Adress as Adress, " + 
+                    "Main.Adress as Adress, " +
+                    "ISNULL(RefSection.descr, 'Нет адреса') as AdressCompl, " +
                     "Main.Doc as Doc, " + 
                     "Journ.docno as ProposalNumber, " + 
                     "CAST(LEFT(journ.date_time_iddoc,8) as DateTime) as ProposalDate, " +
@@ -2533,7 +2519,8 @@ namespace WPM
                     ") as Main " +
                     "LEFT JOIN (" +
                                 "SELECT " +
-                                    "Boxes.$Спр.МестаПогрузки.Док as DocID, " + 
+                                    "Boxes.$Спр.МестаПогрузки.Док as DocID, " +
+                                    "min(Boxes.$Спр.МестаПогрузки.Адрес9 ) as AdressCompl, " +
                                     "Count(*) as CountBox " + 
                                 "FROM $Спр.МестаПогрузки as Boxes (nolock) " +
                                 "WHERE Boxes.ismark = 0 " + 
@@ -2542,7 +2529,8 @@ namespace WPM
                         "ON Boxes.DocID = Main.DocFull " + 
                     "LEFT JOIN (" +
                                 "SELECT " +
-                                    "Boxes.$Спр.МестаПогрузки.Док as DocID, " + 
+                                    "Boxes.$Спр.МестаПогрузки.Док as DocID, " +
+                                    "min(Boxes.$Спр.МестаПогрузки.Адрес9 ) as AdressCompl, " +
                                     "Count(*) as CountBox " + 
                                 "FROM $Спр.МестаПогрузки as Boxes (nolock) " +
                                 "WHERE Boxes.ismark = 0 and not Boxes.$Спр.МестаПогрузки.Дата6 = :EmptyDate " + 
@@ -2550,9 +2538,13 @@ namespace WPM
                                 ") as BoxesComplete " +
                         "ON BoxesComplete.DocID = Main.DocFull " + 
                     "LEFT JOIN _1sjourn as journ (nolock) " + 
-                        "ON journ.iddoc = Main.Doc " + 
+                        "ON journ.iddoc = Main.Doc " +
+                    "LEFT JOIN $Спр.Секции as RefSection (nolock) " +
+                        "ON RefSection.id = Boxes.AdressCompl OR RefSection.id = BoxesComplete.AdressCompl " + 
                 "WHERE " +
                     "not ISNULL(BoxesComplete.CountBox, 0) = ISNULL(Boxes.CountBox, 0) " +
+                    "and not ((ISNULL(journ.iddocdef,'') = $ПретензияОтКлиента ) " + 
+                    "and (SUBSTRING(ISNULL(RefSection.descr, 'Нет адреса'),1,2) = '80')) " +
                 "ORDER BY Main.AdressCounter desc " +
                     "";
 
@@ -3829,30 +3821,7 @@ namespace WPM
             colorSwitcher = !colorSwitcher;
             return true;
         }
-        private bool RSCControlCollect(string IDDorID, bool thisID)
-        {
-            if (!thisID)
-            {
-                if (IsSC(IDDorID, "Сотрудники"))
-                {
-                    return ToModeChoiseWork(IDDorID);
-                }
-                else
-                {
-                    FExcStr = "Не верный тип справочника!";
-                    return false;
-                }
-            }
-            else
-            {
-                string IDD;
-                if (!GetCCForIDPlace(IDDorID, out IDD))
-                {
-                    return false;
-                }
-                return RDControlCollect(IDD);
-            }
-        }
+        
         private bool RSCSampleInventory(string IDD)
         {
             if (IsSC(IDD, "Сотрудники"))
@@ -4642,53 +4611,7 @@ namespace WPM
         //    CCListSample.Rows.Add(newRow);
         //    return true;
         //}
-        private bool RDControlCollect(string IDD)
-        {
-            Dictionary<string, object> DataDocAC;
-            //Подсасываем данные документа
-            if (!GetDoc(IDD, out DataDocAC, false))
-            {
-                return false;
-            }
-            if (DataDocAC["IDDOCDEF"].ToString() != "КонтрольНабора")
-            {
-                FExcStr = "Не верный тип документа!";
-                return false;
-            }
-            string TextQuery = 
-                "SELECT " + 
-                    "DocCC.$КонтрольНабора.НомерЛиста as Number, " + 
-                    "Sections.descr as Section, " + 
-                    "CAST(LEFT(journ.date_time_iddoc,8) as DateTime) as DateTime, " +
-                    "journ.DOCNO as DocNumber " + 
-                "FROM DH$КонтрольНабора as DocCC (nolock) " +
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " + 
-                        "ON Sections.id = DocCC.$КонтрольНабора.Сектор " + 
-                    "LEFT JOIN DH$КонтрольРасходной as DocCB (nolock) " + 
-                        "ON DocCB.iddoc = DocCC.$КонтрольНабора.ДокументОснование " +
-                    "LEFT JOIN DH$Счет as Daemond (nolock) " + 
-                        "ON Daemond.iddoc = DocCB.$КонтрольРасходной.ДокументОснование " + 
-                    "LEFT JOIN _1sjourn as journ (nolock) " +
-                        "ON journ.iddoc = Daemond.iddoc " +
-                "WHERE " +
-                    "DocCC.iddoc = :iddoc";
-            QuerySetParam(ref TextQuery, "iddoc", DataDocAC["ID"].ToString());
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count == 0)
-            {
-                FExcStr = "Сынок! Это фантастика!";
-                return false;
-            }
-            ControlCC = DataDocAC["ID"].ToString();
-            LabelControlCC = DT.Rows[0]["DocNumber"].ToString() + " от " + ((DateTime)DT.Rows[0]["DateTime"]).ToString("dd.MM.yy") + " СЕКЦИЯ: " + DT.Rows[0]["Section"].ToString().Trim() + "-" + DT.Rows[0]["Number"].ToString();
-            FExcStr = "ВЫБРАН СБОРОЧНЫЙ ЛИСТ " + LabelControlCC;
-            GoodsCC.Rows.Clear();
-            return true;
-        }
+        
         private bool RDLoadingInicialization(string IDD)
         {
             string IDDoc;
@@ -4944,71 +4867,7 @@ namespace WPM
             }
             return false;
         }
-        private bool RBControlCollect(string Barcode)
-        {
-            string TextQuery = 
-                "SELECT " + 
-                    "Units.parentext as ItemID, " + 
-                    "Goods.$Спр.Товары.ИнвКод as InvCode, " + 
-                    "Goods.descr as Descr " + 
-                "FROM $Спр.ЕдиницыШК as Units (nolock) " +
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " + 
-                        "ON Goods.id = Units.parentext " + 
-                "WHERE Units.$Спр.ЕдиницыШК.Штрихкод = :Barcode ";
-            QuerySetParam(ref TextQuery, "Barcode", Barcode);
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count == 0)
-            {
-                FExcStr = "С таким штрихкодом товар не найден!";
-                return false;
-            }
-            string ItemID = DT.Rows[0]["ItemID"].ToString();
-            string LabelItem = DT.Rows[0]["InvCode"].ToString().Trim() + " " + DT.Rows[0]["Descr"].ToString().Trim();
-
-            if (ControlCC == null)
-            {
-                FExcStr = "Не выбран сборочный лист!";
-                return false;
-            }
-            TextQuery = 
-                "SELECT " + 
-                    "DocCC.LineNo_ as Number, " + 
-                    "DocCC.$КонтрольНабора.СтрокаИсх as NumberInDaemond, " + 
-                    "Goods.$Спр.Товары.ИнвКод as InvCode, " + 
-                    "Sections.descr as Adress, " + 
-                    "DocCC.$КонтрольНабора.Количество as Count, " + 
-                    "Goods.Descr as Descr " + 
-                "FROM DT$КонтрольНабора as DocCC (nolock) " +
-                    "JOIN $Спр.Товары as Goods (nolock) " + 
-                        "ON Goods.Id = DocCC.$КонтрольНабора.Товар " + 
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " + 
-                        "ON Sections.id = DocCC.$КонтрольНабора.Адрес0 " + 
-                "WHERE " +
-                    "Goods.id = :ItemID " +
-                    "and DocCC.iddoc = :iddoc";
-            QuerySetParam(ref TextQuery, "ItemID", ItemID);
-            QuerySetParam(ref TextQuery, "iddoc", ControlCC);
-            
-            GoodsCC.Clear();
-            if (!ExecuteWithRead(TextQuery, out GoodsCC))
-            {
-                return false;
-            }
-            if (GoodsCC.Rows.Count == 0)
-            {
-                FExcStr = "В сборочном нет " + LabelItem;
-                return false;
-            }
-            else
-            {
-                FExcStr = LabelItem;
-                return true;
-            }
-        }
+        
         
         public bool WriteGeneratedBarcode(string ItemID)
         {

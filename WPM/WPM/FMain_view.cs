@@ -1560,6 +1560,16 @@ namespace WPM
             lblDetailsCount.Size = new Size(80, 30);
             pnlCurrent.Controls.Add(lblDetailsCount);
             lblDetailsCount.BringToFront();
+            
+			Label lblScanPrinter = new Label();
+            lblScanPrinter.Font = FontTahoma16Bold;
+            lblScanPrinter.Name = "lblScanPrinter";
+            lblScanPrinter.TextAlign = ContentAlignment.TopCenter;
+            lblScanPrinter.Location = new Point(15,155);
+            lblScanPrinter.Size = new Size(280, 31);
+            lblScanPrinter.BackColor = Color.Yellow;
+            pnlCurrent.Controls.Add(lblScanPrinter);
+            lblScanPrinter.BringToFront();
 
             //Поле для ввода количества
             TextBox tbCount = new TextBox();
@@ -1602,53 +1612,7 @@ namespace WPM
 
             ModeSampleSetReView();
         }   //ModeSampleSetView
-        private void ModeControlCollectView()
-        {
-            DataGridTextBoxColumn columnStyle;
-            DataGridTableStyle dgts;
-
-            DataGrid dgGoodsCC = new DataGrid();
-            dgGoodsCC.Location = new Point(2, 0);
-            dgGoodsCC.Name = "dgGoodsCC";
-            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 6, 165);
-            dgGoodsCC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
-            dgGoodsCC.DataSource = SS.GoodsCC;
-            dgGoodsCC.RowHeadersVisible = false;
-            #region Styles
-            dgGoodsCC.TableStyles.Clear();
-            dgts = new DataGridTableStyle();
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "№";
-            columnStyle.MappingName = "Number";
-            columnStyle.Width = CurrWidth < 320 ? 25 : 40;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Инв.код";
-            columnStyle.MappingName = "InvCode";
-            columnStyle.Width = CurrWidth < 320 ? 54: 76;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Адрес";
-            columnStyle.MappingName = "Adress";
-            columnStyle.Width = CurrWidth < 320 ? 70: 100;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Кол-во";
-            columnStyle.MappingName = "Count";
-            columnStyle.Width = CurrWidth < 320 ? 30: 50;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "№ исх";
-            columnStyle.MappingName = "NumberInDaemond";
-            columnStyle.Width = CurrWidth < 320 ? 25 : 40;
-            dgts.GridColumnStyles.Add(columnStyle);
-
-            dgGoodsCC.TableStyles.Add(dgts);
-            #endregion
-            pnlCurrent.Controls.Add(dgGoodsCC);
-
-            lblAction.Text  = "Ожидание команды";
-        }
+        
         private void ModeHarmonizationInicializeView()
         {
             
@@ -1908,24 +1872,29 @@ namespace WPM
             dgts = new DataGridTableStyle();
 
             columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "№ Адреса";
+            columnStyle.HeaderText = "№";
             columnStyle.MappingName = "AdressCounter";
-            columnStyle.Width = CurrWidth < 320 ? 48 : 68;
+            columnStyle.Width = CurrWidth < 320 ? 28 : 38;
             dgts.GridColumnStyles.Add(columnStyle);
             columnStyle = new DataGridTextBoxColumn();
             columnStyle.HeaderText = "Документ";
             columnStyle.MappingName = "ProposalNumber";
-            columnStyle.Width = CurrWidth < 320 ? 80 : 110;
+            columnStyle.Width = CurrWidth < 320 ? 65 : 85;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Адрес";
+            columnStyle.MappingName = "AdressCompl";
+            columnStyle.Width = CurrWidth < 320 ? 65 : 85;
             dgts.GridColumnStyles.Add(columnStyle);
             columnStyle = new DataGridTextBoxColumn();
             columnStyle.HeaderText = "Мест";
             columnStyle.MappingName = "Boxes";
-            columnStyle.Width = CurrWidth < 320 ? 38 : 55;
+            columnStyle.Width = CurrWidth < 320 ? 30 : 40;
             dgts.GridColumnStyles.Add(columnStyle);
             columnStyle = new DataGridTextBoxColumn();
             columnStyle.HeaderText = "Факт";
             columnStyle.MappingName = "BoxesFact";
-            columnStyle.Width = CurrWidth < 320 ? 38 : 55;
+            columnStyle.Width = CurrWidth < 320 ? 30 : 40;
             dgts.GridColumnStyles.Add(columnStyle);
 
             dgWayBill.TableStyles.Add(dgts);
@@ -3243,10 +3212,6 @@ namespace WPM
                 case Mode.SampleSetCorrect:
                     lblState.Text = SS.DocDown.View;
                     ModeSampleSetCorrectView();
-                    break;
-                case Mode.ControlCollect:
-                    lblState.Text = "Просмотр сборочных листов";
-                    ModeControlCollectView();
                     break;
                 case Mode.HarmonizationInicialize:
                     lblState.Text = "Выбор склада, гармонизация";

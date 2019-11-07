@@ -297,7 +297,9 @@ namespace WPM
             }
             else if (key == Keys.D8 && true)
             {
-                DesireMode = Mode.ControlCollect;
+                SS.OnReport(new ReportEventArgs("Задача выбрана..."));
+                JumpTo(new ControlCollect(SS, this));
+                return;
             }
             else if (key == Keys.D9 && true && Employer.CanHarmonization)
             {

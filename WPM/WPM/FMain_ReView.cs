@@ -213,15 +213,6 @@ namespace WPM
             }
 
         }
-        private void ModeControlCollectReView()
-        {
-            if (SS.LabelControlCC != null)
-            {
-                lblState.Text = SS.LabelControlCC;
-            }
-            DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
-            dgGoodsCC.DataSource = SS.GoodsCC;
-        }
         private void ModeHarmonizationInicializeReView()
         {
             Label lblFrom   = pnlCurrent.GetLabelByName("lblFrom");
@@ -610,6 +601,7 @@ namespace WPM
             Label lblHeaderBalance = pnlCurrent.GetLabelByName("lblHeaderBalance");
             Label lblHeaderSum = pnlCurrent.GetLabelByName("lblHeaderSum");
             Label lblDetailsCount = pnlCurrent.GetLabelByName("lblDetailsCount");
+			Label lblScanPrinter = pnlCurrent.GetLabelByName("lblScanPrinter");
             PictureBox pbPhoto = pnlCurrent.GetPictureBoxByName("pbPhoto");
 
             lblInvCode.ForeColor = Color.Black;
@@ -630,6 +622,7 @@ namespace WPM
             lblCount.Text = SS.CCItem.Count.ToString() + " шт по 1";
             lblDetailsCount.Text = "Деталей: " + SS.CCItem.Details.ToString();
             lblAction.Text = SS.ExcStr;
+			lblScanPrinter.Visible = false;
             switch (SS.CurrentAction)
             {
                 case ActionSet.ScanAdress:
@@ -647,6 +640,12 @@ namespace WPM
                     tbCount.Visible = true;
                     tbCount.BringToFront();
                     tbCount.Focus();
+					break;
+
+                case ActionSet.Waiting:
+                    tbCount.Visible = false;
+                    lblScanPrinter.Visible = true;
+                    lblScanPrinter.Text = "Отсканируйте принтер!";
                     break;
             }
         }
@@ -988,9 +987,6 @@ namespace WPM
                 case Mode.SamplePut:
                     lblState.Text = "Выкладка образцов (" + SS.SampleItems.Rows.Count.ToString() + ")";
                     ModeSamplePutReView();
-                    break;
-                case Mode.ControlCollect:
-                    ModeControlCollectReView();
                     break;
                 case Mode.HarmonizationInicialize:
                     ModeHarmonizationInicializeReView();

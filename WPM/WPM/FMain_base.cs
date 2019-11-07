@@ -18,7 +18,7 @@ namespace WPM
     public partial class FMain : Form
     {
         //const string FileName = @"..\..\Settings.txt";
-        const string Vers = "4.46";     //Номер версии
+        const string Vers = "4.47";     //Номер версии
         const string BaseName = "int9999001rab";
         //const string BaseName = "int9999001ad1"; //debug_true
         Model SS;                       //через данный класс осуществляем общение с БД
@@ -947,7 +947,7 @@ namespace WPM
         }
         private void RKSampleSet(Keys Key, Control currControl)
         {
-            if (Key == Keys.Escape)
+            if (Key == Keys.Escape && (SS.CurrentAction != ActionSet.Waiting))
             {
                 if (!SS.ReactionCancel())
                 {
@@ -2265,14 +2265,7 @@ namespace WPM
                     if (SS.ReactionDoc(dicBarcode["IDD"]))
                     {
                         View();
-                        if (SS.CurrentMode != Mode.ControlCollect)
-                        {
-                            lblAction.Text = "Ожидание команды";
-                        }
-                        else
-                        {
-                            lblAction.Text = SS.ExcStr;
-                        }
+                        lblAction.Text = SS.ExcStr;
                     }
                     else
                     {
@@ -2356,7 +2349,7 @@ namespace WPM
                     lblAction.Text = SS.ExcStr;
                 }
                 View();
-                if (SS.CurrentMode == Mode.AcceptedItem || SS.CurrentMode == Mode.ControlCollect)
+                if (SS.CurrentMode == Mode.AcceptedItem)
                 {
                     lblAction.Text = SS.ExcStr;
                 }
@@ -2383,7 +2376,7 @@ namespace WPM
                         }
                     }
                 }
-                else if (dicBarcode["Type"] == "6" && (SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Down || SS.CurrentMode == Mode.Loading || SS.CurrentMode == Mode.ControlCollect || SS.CurrentMode == Mode.SampleSet || SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.FreeDownComplete || SS.CurrentMode == Mode.NewComplectation || SS.CurrentMode == Mode.NewComplectationComplete))
+                else if (dicBarcode["Type"] == "6" && (SS.CurrentMode == Mode.SetSelfContorl || SS.CurrentMode == Mode.Down || SS.CurrentMode == Mode.Loading || SS.CurrentMode == Mode.SampleSet || SS.CurrentMode == Mode.Set || SS.CurrentMode == Mode.FreeDownComplete || SS.CurrentMode == Mode.NewComplectation || SS.CurrentMode == Mode.NewComplectationComplete))
                 {
                     if (SS.ReactionSC(dicBarcode["ID"], true))
                     {

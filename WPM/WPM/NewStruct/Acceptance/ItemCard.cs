@@ -60,7 +60,16 @@ namespace WPM
         {
             CurrentMode = Mode.ItemCard;
             OldMode = CallObj;
-            Item = (CallObj as RefillLayout).Item;
+            try
+            {
+                Item = (CallObj as RefillLayout).Item;
+
+            }
+            catch
+            {
+                Item = (CallObj as ControlCollect).Item;
+            }
+
             if (!Item.Selected)
             {
                 //нет товара, значит достанем последний товар
