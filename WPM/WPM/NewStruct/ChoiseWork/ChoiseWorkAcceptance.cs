@@ -6,12 +6,12 @@ using System.Windows.Forms;
 
 namespace WPM
 {
-    class ChoiseWorkShipping : ABaseStandart
+    class ChoiseWorkAcceptance : ABaseStandart
     {
-        public ChoiseWorkShipping(Model ReadySS, ABaseMode CallObj)
+        public ChoiseWorkAcceptance(Model ReadySS, ABaseMode CallObj)
             : base(ReadySS, CallObj)
         {
-            CurrentMode = Mode.ChoiseWorkShipping;
+            CurrentMode = Mode.ChoiseWorkAcceptance;
         } // ChoiseWorkShipping (constructor)
         internal override ABaseMode Init()
         {
@@ -25,23 +25,13 @@ namespace WPM
                 Cancel();
                 return;
             }
-            else if (key == Keys.D1 && Employer.CanComplectation)
+            else if (key == Keys.D1 && Employer.CanAcceptance)
             {
-                DesireMode = Mode.LoadingInicialization;
+                DesireMode = Mode.Acceptance;
             }
-            else if (key == Keys.D2 && Employer.CanComplectation)
+            else if (key == Keys.D2 && Employer.CanAcceptance)
             {
-                SS.OnReport(new ReportEventArgs("Задача выбрана..."));
-                JumpTo(new UnLoading(SS, this));
-                return;
-            }
-            else if (key == Keys.D3 && Employer.CanDown)
-            {
-                DesireMode = Mode.ChoiseDown;
-            }
-            else if (key == Keys.D4 && Employer.CanComplectation)
-            {
-                DesireMode = Mode.FreeDownComplete;
+                DesireMode = Mode.AcceptanceCross;
             }
             else
             {

@@ -142,3 +142,48 @@ C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\
 C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
 C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.exe
 C:\Users\perov\Desktop\Временная\WPM\WPM_Git_dev\WPM\WPM\WPM\obj\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\bin\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\bin\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\bin\Debug\System.Data.SqlClient.dll
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\obj\Debug\ResolveAssemblyReference.cache
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\obj\Debug\WPM.FMain.resources
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\obj\Debug\WPM.Properties.Resources.resources
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\obj\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM 4.46\WPM\WPM\WPM\obj\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\bin\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\bin\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\bin\Debug\System.Data.SqlClient.dll
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\ResolveAssemblyReference.cache
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.FMain.resources
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.Properties.Resources.resources
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM_git_dev\WPM\WPM\obj\Debug\WPM.pdb
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\obj\Debug\ResolveAssemblyReference.cache
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.FMain.resources
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.Properties.Resources.resources
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.exe
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\bin\Debug\WPM.exe
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\bin\Debug\WPM.pdb
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\bin\Debug\System.Data.SqlClient.dll
+\\fs\fs\AdminBases\Документация 1С\Радиотерминал\VS 2008\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\bin\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\bin\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\bin\Debug\System.Data.SqlClient.dll
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\obj\Debug\ResolveAssemblyReference.cache
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.FMain.resources
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.Properties.Resources.resources
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM 4.47\WPM\WPM\WPM\obj\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\bin\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\bin\Debug\WPM.pdb
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\bin\Debug\System.Data.SqlClient.dll
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\obj\Debug\ResolveAssemblyReference.cache
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\obj\Debug\WPM.FMain.resources
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\obj\Debug\WPM.Properties.Resources.resources
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\obj\Debug\WPM.csproj.GenerateResource.Cache
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\obj\Debug\WPM.exe
+E:\СашиныНаработки(Мои)\WPM_git_Dev\WPM\WPM\WPM\obj\Debug\WPM.pdb

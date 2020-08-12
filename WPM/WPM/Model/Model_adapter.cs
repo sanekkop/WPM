@@ -19,7 +19,7 @@ namespace WPM
         public bool ChoiseWork(Mode DesireMode)
         {
             FExcStr = null;
-            if (!(FCurrentMode == Mode.ChoiseWork || FCurrentMode == Mode.ChoiseWorkShipping || FCurrentMode == Mode.ChoiseWorkSupply || FCurrentMode == Mode.ChoiseWorkSample))
+            if (!(FCurrentMode == Mode.ChoiseWork || FCurrentMode == Mode.ChoiseWorkShipping || FCurrentMode == Mode.ChoiseWorkSupply || FCurrentMode == Mode.ChoiseWorkSample || FCurrentMode == Mode.ChoiseWorkAcceptance))
             {
                 FExcStr = "Недопустимая команда в текущем режиме!";
                 return false;
@@ -70,6 +70,13 @@ namespace WPM
                     break;
                 case Mode.FreeDownComplete:
                     result = ToModeFreeDownComplete();
+                    break;
+                case Mode.AcceptanceCross:
+                    if (FConsignment != null)
+                    {
+                        FConsignment.Rows.Clear();
+                    }
+                    result = ToModeAcceptanceCross();
                     break;
                 default:
                     FExcStr = "Не возможно перейти в указанный режим!";

@@ -15,13 +15,17 @@ namespace WPM
 
             // проверим, есть ли сведения в регистре АдресЗаданияСотрудников об уже полученных заданиях на набор образцов
             DataTable DT;
+            MyConnection.Close();
+            MyConnection.Open();
             string TextQuery =
                 "SELECT " +
-                    "SP4361 as DocID " +
+                    "Reg.$Рег.АдресЗаданияСотрудников.Док as DocID " +
                 "FROM " +
-                    "RG4365 as Reg " +
+                    "RG$Рег.АдресЗаданияСотрудников as Reg " +
                 "WHERE " +
-                    "SP4360 = :Employer and SP4362 = 4 and SP4364 = 1";
+                    "Reg.$Рег.АдресЗаданияСотрудников.Сотрудник = :Employer " +
+                    "and Reg.$Рег.АдресЗаданияСотрудников.ТипЗадания = 4 " +
+                    "and Reg.$Рег.АдресЗаданияСотрудников.Выполняется = 1";
             SQL1S.QuerySetParam(ref TextQuery, "Employer", Employer.ID);
 
             if (!ExecuteWithRead(TextQuery, out DT))
@@ -156,7 +160,8 @@ namespace WPM
             //если в доке больше нет не отобранных, оповестим 1с о завершении набора образцов
             if (AllSetsRow == 0)
             {
-                FExcStr = "Отсканируйте принтер";
+                FExcStr = "";
+                CurrentAction = ActionSet.Waiting;
             }
             return true;
         } //CompleteLineSampleSet
@@ -255,12 +260,45 @@ namespace WPM
             {
                 ATDoc.ID = DT.Rows[0]["IDDOC"].ToString();
             }
+            // заглушка
+            // все строчки отобраны, пусть сканируют принтер
             else
             {
-                FExcStr = "Документ не найден!";
-                return false;
-            }
+                TextQuery =
+                    "SELECT TOP 1" +
+                        "journ.iddoc as IDDOC, " +
+                        "journ.docno as DocNo, " +
+                        "journ.date_time_iddoc as DateDoc " +
+                    "FROM " +
+                        "_1sjourn as journ (nolock) " +
+                    "WHERE " +
+                        "journ.iddoc = :Doc " +
+                        "and journ.ismark = 0 ";
+                SQL1S.QuerySetParam(ref TextQuery, "Doc", IDD);
+                if (!ExecuteWithRead(TextQuery, out DT))
+                {
+                    return false;
+                }
+                //забъем пустыми для отображения
+                DocSet = new StrictDoc();
+                DocSet.View = " АдресПеремещение " + DT.Rows[0]["DocNo"].ToString() + " (" + DT.Rows[0]["DateDoc"].ToString() + ")";
+                ATDoc.ID = DT.Rows[0]["IDDOC"].ToString();
+                CCItem = new StructItemSet();
+                CCItem.ID = "";
+                CCItem.InvCode = "";
+                CCItem.Name = "";
+                CCItem.Count = 0;
+                CCItem.CountFact = 0;
+                CCItem.AdressID = "";
+                CCItem.AdressName = "";
+                CCItem.CurrLine = 0;
+                CCItem.Details = 0;
+                CCItem.Balance = 0;
 
+                CurrentAction = ActionSet.Waiting;
+                FExcStr = WhatUNeed();
+                return true;
+            }
             DocSet = new StrictDoc();
             DocSet.View = " АдресПеремещение " + DT.Rows[0]["DocNo"].ToString() + " (" + DT.Rows[0]["DateDoc"].ToString() + ")";
             DocSet.ID = DT.Rows[0]["IDDOC"].ToString();

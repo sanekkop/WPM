@@ -58,8 +58,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FMain_RK.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Model\Model_RSC.cs" />
     <Compile Include="Model\Model_SampleSetCorrect.cs" />
     <Compile Include="Model\Model_SampleSet.cs" />
+    <Compile Include="Model\Model_ToMode.cs" />
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkSample.cs" />
     <Compile Include="EventArgs\ABaseModeEventArgs.cs" />
     <Compile Include="EventArgs\ReportEventArgs.cs" />
@@ -112,6 +117,7 @@
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkShipping.cs" />
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkSupply.cs" />
     <Compile Include="NewStruct\ChoiseWork\ChoiseWorkAddressCard.cs" />
+    <Compile Include="NewStruct\ChoiseWork\ChoiseWorkAcceptance.cs" />
     <Compile Include="NewStruct\ControlCollect\ControlCollect.cs" />
     <Compile Include="NewStruct\Loader-Refill\Loader.cs" />
     <Compile Include="NewStruct\Loader-Refill\LoaderChoise.cs" />
@@ -130,6 +136,7 @@
     <Compile Include="NewStruct\Set\Set.cs" />
     <Compile Include="NewStruct\Set\SetInicialization.cs" />
     <Compile Include="NewStruct\Set\SetTransfer.cs" />
+    <Compile Include="NewStruct\UnLoading\UnLoading.cs" />
     <Compile Include="NewStruct\Waiting.cs" />
     <Compile Include="PanelEx.cs">
       <SubType>Component</SubType>

@@ -634,7 +634,7 @@ namespace WPM
         {
             ScreanAcceptedItem = 0;
             SS.AcceptedItem.AcceptCount     = SS.AcceptedItem.Count;
-            if (SS.AcceptedItem.ToMode == Mode.SampleInventory || SS.AcceptedItem.ToMode == Mode.SamplePut || SS.AcceptedItem.ToMode == Mode.Harmonization || SS.AcceptedItem.ToMode == Mode.HarmonizationPut)
+            if (SS.AcceptedItem.ToMode == Mode.SampleInventory || SS.AcceptedItem.ToMode == Mode.SamplePut || SS.AcceptedItem.ToMode == Mode.Harmonization || SS.AcceptedItem.ToMode == Mode.HarmonizationPut || SS.AcceptedItem.ToMode == Mode.AcceptanceCross)
             {
                 CurrentRowItem = 0;//У образцов и гармонизации - главная штука
             }
@@ -941,7 +941,26 @@ namespace WPM
             lblZoneAdress.TextAlign = ContentAlignment.TopRight;
             lblZoneAdress.Location = new Point(CurrWidth < 320 ? 129 : 209, 43);
             lblZoneAdress.Size = new Size(70, 16);
-            lblZoneAdress.Text = "<-- зоны там";
+            if (SS.AcceptedItem.ToMode == Mode.AcceptanceCross)
+            {
+                if (SS.PalletAcceptedItem != null && SS.PalletAcceptedItem.Selected)
+                {
+                    lblZoneAdress.Text = SS.PalletAcceptedItem.Pallete;  
+                }
+                else if (SS.CurrentPalletAcceptedItem != null && SS.CurrentPalletAcceptedItem.Selected)
+                {
+                    lblZoneAdress.Text = SS.CurrentPalletAcceptedItem.Pallete;
+                }
+                else
+                {
+                    lblZoneAdress.Text = "нет адреса";
+                }
+            }
+            else 
+            {
+                lblZoneAdress.Text =  "<-- зоны там";             
+            }
+
             pnlCurrent.Controls.Add(lblZoneAdress);
 
             //Костыль, временно, чтобы не прортить FExcStr
@@ -1560,6 +1579,16 @@ namespace WPM
             lblDetailsCount.Size = new Size(80, 30);
             pnlCurrent.Controls.Add(lblDetailsCount);
             lblDetailsCount.BringToFront();
+            
+			Label lblScanPrinter = new Label();
+            lblScanPrinter.Font = FontTahoma16Bold;
+            lblScanPrinter.Name = "lblScanPrinter";
+            lblScanPrinter.TextAlign = ContentAlignment.TopCenter;
+            lblScanPrinter.Location = new Point(15,155);
+            lblScanPrinter.Size = new Size(280, 31);
+            lblScanPrinter.BackColor = Color.Yellow;
+            pnlCurrent.Controls.Add(lblScanPrinter);
+            lblScanPrinter.BringToFront();
 
             //Поле для ввода количества
             TextBox tbCount = new TextBox();
@@ -1602,53 +1631,7 @@ namespace WPM
 
             ModeSampleSetReView();
         }   //ModeSampleSetView
-        private void ModeControlCollectView()
-        {
-            DataGridTextBoxColumn columnStyle;
-            DataGridTableStyle dgts;
-
-            DataGrid dgGoodsCC = new DataGrid();
-            dgGoodsCC.Location = new Point(2, 0);
-            dgGoodsCC.Name = "dgGoodsCC";
-            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 6, 165);
-            dgGoodsCC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
-            dgGoodsCC.DataSource = SS.GoodsCC;
-            dgGoodsCC.RowHeadersVisible = false;
-            #region Styles
-            dgGoodsCC.TableStyles.Clear();
-            dgts = new DataGridTableStyle();
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "№";
-            columnStyle.MappingName = "Number";
-            columnStyle.Width = CurrWidth < 320 ? 25 : 40;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Инв.код";
-            columnStyle.MappingName = "InvCode";
-            columnStyle.Width = CurrWidth < 320 ? 54: 76;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Адрес";
-            columnStyle.MappingName = "Adress";
-            columnStyle.Width = CurrWidth < 320 ? 70: 100;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "Кол-во";
-            columnStyle.MappingName = "Count";
-            columnStyle.Width = CurrWidth < 320 ? 30: 50;
-            dgts.GridColumnStyles.Add(columnStyle);
-            columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "№ исх";
-            columnStyle.MappingName = "NumberInDaemond";
-            columnStyle.Width = CurrWidth < 320 ? 25 : 40;
-            dgts.GridColumnStyles.Add(columnStyle);
-
-            dgGoodsCC.TableStyles.Add(dgts);
-            #endregion
-            pnlCurrent.Controls.Add(dgGoodsCC);
-
-            lblAction.Text  = "Ожидание команды";
-        }
+        
         private void ModeHarmonizationInicializeView()
         {
             
@@ -1908,24 +1891,29 @@ namespace WPM
             dgts = new DataGridTableStyle();
 
             columnStyle = new DataGridTextBoxColumn();
-            columnStyle.HeaderText = "№ Адреса";
+            columnStyle.HeaderText = "№";
             columnStyle.MappingName = "AdressCounter";
-            columnStyle.Width = CurrWidth < 320 ? 48 : 68;
+            columnStyle.Width = CurrWidth < 320 ? 28 : 38;
             dgts.GridColumnStyles.Add(columnStyle);
             columnStyle = new DataGridTextBoxColumn();
             columnStyle.HeaderText = "Документ";
             columnStyle.MappingName = "ProposalNumber";
-            columnStyle.Width = CurrWidth < 320 ? 80 : 110;
+            columnStyle.Width = CurrWidth < 320 ? 65 : 85;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Адрес";
+            columnStyle.MappingName = "AdressCompl";
+            columnStyle.Width = CurrWidth < 320 ? 65 : 85;
             dgts.GridColumnStyles.Add(columnStyle);
             columnStyle = new DataGridTextBoxColumn();
             columnStyle.HeaderText = "Мест";
             columnStyle.MappingName = "Boxes";
-            columnStyle.Width = CurrWidth < 320 ? 38 : 55;
+            columnStyle.Width = CurrWidth < 320 ? 30 : 40;
             dgts.GridColumnStyles.Add(columnStyle);
             columnStyle = new DataGridTextBoxColumn();
             columnStyle.HeaderText = "Факт";
             columnStyle.MappingName = "BoxesFact";
-            columnStyle.Width = CurrWidth < 320 ? 38 : 55;
+            columnStyle.Width = CurrWidth < 320 ? 30 : 40;
             dgts.GridColumnStyles.Add(columnStyle);
 
             dgWayBill.TableStyles.Add(dgts);
@@ -1948,6 +1936,15 @@ namespace WPM
             btnPrint.Size      = new Size (150, 20);
             btnPrint.Click     += DynamicButtonOnClick;
             pnlCurrent.Controls.Add(btnPrint);
+
+            //Кнопка обновить погрузку
+            Button btnRefresh = new Button();
+            btnRefresh.Name = "btnRefresh";
+            btnRefresh.Text = "Обновить";
+            btnRefresh.Location = new Point(-1 * Screan * pnlCurrent.Width + 215, 160);
+            btnRefresh.Size = new Size(100, 20);
+            btnRefresh.Click += DynamicButtonOnClick;
+            pnlCurrent.Controls.Add(btnRefresh);
 
             lblAction.Text = "Ожидание команды";
             dgWayBill.Focus();
@@ -3015,6 +3012,299 @@ namespace WPM
             pnlCurrent.Controls.Add(lblKey2);
         }
 
+
+        private void ModeAcceptanceCrossView()
+        {
+            TimerFind.Interval = 150;
+            TimerFind.Enabled = false;
+            DataGridTextBoxColumn columnStyle;
+            DataGridTableStyle dgts;
+
+            BindingSource BS = new BindingSource();
+            BS.DataSource = SS.NotAcceptedItems;
+            BS.Filter = null;
+
+            DataGrid dgNAI = new DataGrid();
+            dgNAI.BackgroundColor = Color.White;
+            dgNAI.Location = new Point(-1 * Screan * pnlCurrent.Width - (CurrWidth - 6), 20);
+            dgNAI.Name = "dgNotAcceptedItems";
+            dgNAI.Size = new Size(CurrWidth - 10, 100);
+            dgNAI.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
+            dgNAI.RowHeadersVisible = false;
+            #region Styles;
+            //Настройка отображения
+            dgNAI.TableStyles.Clear();
+            dgts = new DataGridTableStyle();
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "№";
+            columnStyle.MappingName = "LINENO_";
+            columnStyle.Width = 20;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Клиент";
+            columnStyle.MappingName = "ClientName";
+            columnStyle.Width = 65;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Заказ";
+            columnStyle.MappingName = "OrderName";
+            columnStyle.Width = 60;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Артикул";
+            columnStyle.MappingName = "Article";
+            columnStyle.Width = CurrWidth < 320 ? 70 : 60;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Арт. на упак.";
+            columnStyle.MappingName = "ArticleOnPack";
+            columnStyle.Width = CurrWidth < 320 ? 6 : 55;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Количество";
+            columnStyle.MappingName = "Count";
+            columnStyle.Width = 30;
+            dgts.GridColumnStyles.Add(columnStyle);
+            dgNAI.TableStyles.Add(dgts);
+            #endregion
+            dgNAI.DataSource = BS;
+            dgNAI.CurrentCellChanged += OnCurrentCellChanged;
+            pnlCurrent.Controls.Add(dgNAI);
+
+            DataGrid dgNAIC = new DataGrid();
+            dgNAIC.BackgroundColor = Color.White;
+            if (Screan == -2)
+            {
+                dgNAIC.Location = new Point(-1 * (Screan+1) * pnlCurrent.Width - (2 * CurrWidth - 10), 20);
+            }
+            else
+            {
+                dgNAIC.Location = new Point(-1 * Screan * pnlCurrent.Width - (2 * CurrWidth - 10), 20);
+            }
+            dgNAIC.Name = "dgNotAcceptedItemsCross";
+            dgNAIC.Size = new Size(CurrWidth - 10, 160);
+            dgNAIC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
+            dgNAIC.RowHeadersVisible = false;
+            #region Styles;
+            //Настройка отображения
+            dgNAIC.TableStyles.Clear();
+            dgts = new DataGridTableStyle();
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "№";
+            columnStyle.MappingName = "LINENO_";
+            columnStyle.Width = 20;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Наименование";
+            columnStyle.MappingName = "ItemName";
+            columnStyle.Width = CurrWidth < 320 ? 150 : 240;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Кол.";
+            columnStyle.MappingName = "Count";
+            columnStyle.Width = 32;
+            dgts.GridColumnStyles.Add(columnStyle);
+            dgNAIC.TableStyles.Add(dgts);
+            #endregion
+            dgNAIC.DataSource = BS;
+            dgNAIC.CurrentCellChanged += OnCurrentCellChanged;
+            pnlCurrent.Controls.Add(dgNAIC);
+
+            DataGrid dgAI = new DataGrid();
+            dgAI.BackgroundColor = Color.White;
+            dgAI.Location = new Point(-1 * Screan * pnlCurrent.Width + (CurrWidth + 2), 20);
+            dgAI.Name = "dgAcceptedItems";
+            dgAI.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
+            dgAI.Size = new Size(CurrWidth - 10, 140);
+            dgAI.RowHeadersVisible = false;
+            #region Styles;
+            //Настройка отображения
+            dgAI.TableStyles.Clear();
+            dgts = new DataGridTableStyle();
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "№";
+            columnStyle.MappingName = "LINENO_";
+            columnStyle.Width = 20;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Клиент";
+            columnStyle.MappingName = "ClientName";
+            columnStyle.Width = 70;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Заказ";
+            columnStyle.MappingName = "OrderName";
+            columnStyle.Width = 60;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Паллета";
+            columnStyle.MappingName = "PalletName";
+            columnStyle.Width = 60;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Принято";
+            columnStyle.MappingName = "Count";
+            columnStyle.Width = 30;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Всего";
+            columnStyle.MappingName = "CountAll";
+            columnStyle.Width = 30;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "ЗКР";
+            columnStyle.MappingName = "CloseOrder";
+            columnStyle.Width = 20;
+            dgts.GridColumnStyles.Add(columnStyle);
+            dgAI.TableStyles.Add(dgts);
+            #endregion
+            dgAI.DataSource = SS.AcceptedItems;
+            pnlCurrent.Controls.Add(dgAI);
+
+            DataGrid dgC = new DataGrid();
+            dgC.BackgroundColor = Color.White;
+            dgC.Location = new Point(-1 * Screan * pnlCurrent.Width + 9, 20);
+            dgC.Name = "dgConsignment";
+            dgC.Size = new Size(CurrWidth - 20, 140);
+            dgC.Font = FontTahoma10Regular;
+            dgC.RowHeadersVisible = false;
+            //Настройка отображения
+            #region Styles;
+            dgC.TableStyles.Clear();
+            dgts = new DataGridTableStyle();
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "№";
+            columnStyle.MappingName = "Number";
+            columnStyle.Width = 30;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Накладная";
+            columnStyle.MappingName = "DOCNO";
+            columnStyle.Width = 90;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Дата";
+            columnStyle.MappingName = "DateDocText";
+            columnStyle.Width = CurrWidth < 320 ? 6 : 90;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Осталось";
+            columnStyle.MappingName = "CountNotAcceptRow";
+            columnStyle.Width = 84;
+            dgts.GridColumnStyles.Add(columnStyle);
+            dgC.TableStyles.Add(dgts);
+            #endregion
+            dgC.DataSource = SS.Consignment;
+            pnlCurrent.Controls.Add(dgC);
+
+            Label lblPrinter = new Label();
+            lblPrinter.Font = FontTahoma10Bold;
+            lblPrinter.ForeColor = Color.DarkGreen;
+            lblPrinter.BackColor = Color.LightGray;
+            lblPrinter.Name = "lblPrinter";
+            lblPrinter.TextAlign = ContentAlignment.TopCenter;
+            lblPrinter.Location = new Point(4, 0);
+            lblPrinter.Size = new Size(CurrWidth - 10, 20);
+            pnlCurrent.Controls.Add(lblPrinter);
+
+            Label lblItem = new Label();
+            lblItem.Font = FontTahoma10Regular;
+            lblItem.ForeColor = Color.DarkGreen;
+            lblItem.BackColor = Color.White;
+            lblItem.Name = "lblItem";
+            lblItem.TextAlign = ContentAlignment.TopLeft;
+            lblItem.Location = new Point(-1 * Screan * pnlCurrent.Width - (CurrWidth - 2), 145);
+            lblItem.Size = new Size(CurrWidth - 2, 40);
+            pnlCurrent.Controls.Add(lblItem);
+
+            //Поле для ввода артикула
+            TextBox tbFind = new TextBox();
+            tbFind.Name = "tbFind";
+            tbFind.Location = new Point(-1 * Screan * pnlCurrent.Width - (CurrWidth - 6), 120);
+            tbFind.Size = new Size(CurrWidth < 320 ? 100 : 120, 24);
+            tbFind.Font = FontTahoma10Regular;
+            tbFind.KeyPress += DynamicOnKeyPress;
+            tbFind.TextChanged += DynamicOnTextChanged;
+            pnlCurrent.Controls.Add(tbFind);
+
+            Label lblLabelFind = new Label();
+            lblLabelFind.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
+            lblLabelFind.BackColor = Color.White;
+            lblLabelFind.Name = "lblLabelFind";
+            lblLabelFind.TextAlign = ContentAlignment.TopLeft;
+            lblLabelFind.Location = new Point(-1 * Screan * pnlCurrent.Width - (CurrWidth < 320 ? 130 : 190), 120);
+            lblLabelFind.Size = new Size(CurrWidth < 320 ? 130 : 150, 20);
+            lblLabelFind.Text = " <-- поиск по артикулам";
+            pnlCurrent.Controls.Add(lblLabelFind);
+
+            //Поле для ввода количества Мест
+            TextBox tbLabelCount = new TextBox();
+            tbLabelCount.Name = "tbLabelCount";
+            tbLabelCount.Location = new Point(-1 * Screan * pnlCurrent.Width + (CurrWidth - 2) + (CurrWidth < 320 ? 194 : 264), 160);
+            tbLabelCount.Size = new Size(CurrWidth < 320 ? 40 : 50, 24);
+            tbLabelCount.Font = FontTahoma10Regular;
+            tbLabelCount.KeyPress += DynamicOnKeyPress;
+            //tbLabelCount.TextChanged += DynamicOnTextChanged;
+            tbLabelCount.LostFocus += DynamicLostFocus;
+            pnlCurrent.Controls.Add(tbLabelCount);
+
+            Label lblInvCode = new Label();
+            lblInvCode.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            lblInvCode.ForeColor = Color.DarkGreen;
+            lblInvCode.BackColor = Color.White;
+            lblInvCode.Name = "lblInvCode";
+            lblInvCode.TextAlign = ContentAlignment.TopRight;
+            lblInvCode.Location = new Point(-1 * Screan * pnlCurrent.Width + (CurrWidth - 2) + (CurrWidth < 320 ? 144 : 204), 160);
+            lblInvCode.Size = new Size(CurrWidth < 320 ? 50 : 60, 24);
+            pnlCurrent.Controls.Add(lblInvCode);
+
+            //Кнопка закрыть
+            Button btnPrintCondition = new Button();
+            btnPrintCondition.Name = "btnPrintCondition";
+            btnPrintCondition.Text = "Закрыть";
+            btnPrintCondition.Location = new Point(-1 * Screan * pnlCurrent.Width + (CurrWidth - 2) + (CurrWidth < 320 ? 93 : 143), 160);
+            btnPrintCondition.Size = new Size(CurrWidth < 320 ? 50 : 60, 24);
+            btnPrintCondition.Click += DynamicButtonOnClick;
+            pnlCurrent.Controls.Add(btnPrintCondition);
+
+            //Кнопка закрыть полюбас
+            Button btnPrint = new Button();
+            btnPrint.Name = "btnPrint";
+            btnPrint.Text = CurrWidth < 320 ? "Полюбому" : "Закрыть полюбому";
+            btnPrint.Location = new Point(-1 * Screan * pnlCurrent.Width + (CurrWidth + 2), 160);
+            btnPrint.Size = new Size(CurrWidth < 320 ? 85 : 135, 24);
+            btnPrint.Click += DynamicButtonOnClick;
+            pnlCurrent.Controls.Add(btnPrint);
+            pnlCurrent.StaticControl.Add("lblPrinter");
+
+            lblAction.ForeColor = Color.Blue;
+            lblAction.Text = "Ожидание команды";
+            if (SS.ExcStr != null)
+            {
+                if (SS.ExcStr != "")
+                {
+                    lblAction.Text = SS.ExcStr;
+                }
+            }
+
+            if (Screan == -1)
+            {
+                dgNAI.Focus();
+            }
+            else if (Screan == 1)
+            {
+                dgAI.Focus();
+            }
+            else if (Screan == -2)
+            {
+                dgNAIC.Focus();
+            }
+            else
+            {
+                dgC.Focus();
+            }
+        }
+        
         private void ShowInfoNewComp()
         {
             
@@ -3202,6 +3492,9 @@ namespace WPM
                 case Mode.Acceptance:
                     ModeAcceptanceView();
                     break;
+                case Mode.AcceptanceCross:
+                    ModeAcceptanceCrossView();
+                    break;
                 case Mode.TransferInicialize:
                     lblState.Text = "Разнос инициализация";
                     ModeTransferInicializeView();
@@ -3243,10 +3536,6 @@ namespace WPM
                 case Mode.SampleSetCorrect:
                     lblState.Text = SS.DocDown.View;
                     ModeSampleSetCorrectView();
-                    break;
-                case Mode.ControlCollect:
-                    lblState.Text = "Просмотр сборочных листов";
-                    ModeControlCollectView();
                     break;
                 case Mode.HarmonizationInicialize:
                     lblState.Text = "Выбор склада, гармонизация";

@@ -98,6 +98,15 @@ namespace WPM
                             return ReactionCancel();
                         }
                     }
+                    else if (AcceptedItem.ToMode == Mode.AcceptanceCross)
+                    {
+                        if (!ToModeAcceptanceCross())
+                        {
+                            //Если не получилось обновить, то вылетаем в главное меню!
+                            FCurrentMode = Mode.AcceptanceCross;
+                            return ReactionCancel();
+                        }
+                    }
                     else
                     {
                         FCurrentMode = AcceptedItem.ToMode;
@@ -110,8 +119,6 @@ namespace WPM
                     return ToModeChoiseWork();
                 case Mode.SampleSetCorrect:
                     return ToModeSampleSet();
-                case Mode.ControlCollect:
-                    return ToModeChoiseWork();
                 case Mode.HarmonizationInicialize:
                     return ToModeChoiseWork();
                 case Mode.Harmonization:
@@ -133,6 +140,9 @@ namespace WPM
                     return ToModeWaiting();
                 case Mode.NewComplectationComplete:
                     return ToModeWaiting();
+                case Mode.AcceptanceCross:
+                    QuitModeAcceptanceCross();
+                    return ToModeChoiseWork();
                 default:
                     FExcStr = "Недопустимая команда в текущем режиме!";
                     return false;
@@ -221,6 +231,9 @@ namespace WPM
 
                 case Mode.ChoiseDown:
                     return RSCChoiseDown(IDD);
+                
+                case Mode.AcceptanceCross:
+                    return RSCAcceptanceCross(IDD);
 
                 default:
                     FExcStr = "Нет действий с данным справочником в данном режиме!";
@@ -251,15 +264,16 @@ namespace WPM
                 case Mode.SampleSet:
                     return RDSampleSet(IDD, null);
 
-                case Mode.ControlCollect:
-                    return RDControlCollect(IDD);
-
                 case Mode.LoadingInicialization:
                     return RDLoadingInicialization(IDD);
 
                 case Mode.SetInicialization:
                     return RDSetInicialization(IDD);
 
+				case Mode.ChoiseWorkAcceptance:
+                    goto case Mode.Waiting;
+                case Mode.AcceptanceCross:
+                    return RDAcceptanceCross(IDD);
                 default:
                     FExcStr = "Нет действий с данным документом в данном режиме!";
                     return false;
@@ -277,6 +291,26 @@ namespace WPM
                 case Mode.SamplePut:
                     return RBSample(Barcode, Mode.SamplePut, 0);
                 case Mode.Acceptance:
+                    TextQuery =
+                        "SELECT " +
+                            "Units.parentext as ItemID, " +
+                            "Units.$Спр.ЕдиницыШК.ОКЕИ as OKEI " +
+                        "FROM $Спр.ЕдиницыШК as Units (nolock) " +
+                        "WHERE Units.$Спр.ЕдиницыШК.Штрихкод = :Barcode ";
+                    QuerySetParam(ref TextQuery, "Barcode", Barcode);
+                    if (!ExecuteWithRead(TextQuery, out DT))
+                    {
+                        return false;
+                    }
+                    if (DT.Rows.Count == 0)
+                    {
+                        FExcStr = "С таким штрихкодом товар не найден!";
+                        return false;
+                    }
+                    FFlagBarcode = (DT.Rows[0]["OKEI"].ToString() == OKEIPackage ? 2 : 1);
+                    return ToModeAcceptedItem(DT.Rows[0]["ItemID"].ToString(), "");
+
+                case Mode.AcceptanceCross:
                     TextQuery =
                         "SELECT " +
                             "Units.parentext as ItemID, " +
@@ -358,9 +392,6 @@ namespace WPM
 
                 case Mode.HarmonizationPut:
                     return RBHarmonization(Barcode, Mode.HarmonizationPut);
-
-                case Mode.ControlCollect:
-                    return RBControlCollect(Barcode);
 
                 default:
                     FExcStr = "Нет действий с этим штирхкодом в данном режиме!";

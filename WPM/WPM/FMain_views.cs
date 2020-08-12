@@ -48,7 +48,7 @@ namespace WPM
             #region 1 - Приёмка/Take
             Label btnTake = new Label();
             btnTake.Name = "btnTake";
-            btnTake.Text = "1 - Приемка";
+            btnTake.Text = "1 - Приемка ***";
             btnTake.TextAlign = ContentAlignment.TopCenter;
             btnTake.Location = new Point(6, 19);
             btnTake.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
@@ -202,6 +202,17 @@ namespace WPM
             btnLoad.ForeColor = SS.Employer.CanComplectation ? Color.Black : Color.DarkGray;
             btnLoad.BackColor = Color.LightGray;
             pnlCurrent.Controls.Add(btnLoad);
+
+            Label btnUnLoad = new Label();
+            btnUnLoad.Name = "btnUnLoad";
+            btnUnLoad.Text = "2 - Разгрузка";
+            btnUnLoad.TextAlign = ContentAlignment.TopCenter;
+            btnUnLoad.Location = new Point(6, 38);
+            btnUnLoad.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
+            btnUnLoad.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnUnLoad.ForeColor = SS.Employer.CanComplectation ? Color.Black : Color.DarkGray;
+            btnUnLoad.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnUnLoad);
 
             Label btnDown = new Label();
             btnDown.Name = "btnDown";
@@ -2024,6 +2035,219 @@ namespace WPM
             lblItemTest.Text = Obj.Item.Name;
             pnlCurrent.Controls.Add(lblItemTest);*/
 
+        } 
+        
+        private void ChoiseWorkAcceptance_view()
+        {
+            lblState.Text = "Выбор работы (приемка)";
+            ChoiseWorkAcceptance Obj = SS.MM as ChoiseWorkAcceptance;
+
+            Screan = 0;
+            DrawlblResult();
+            Label btnCancel = new Label();
+            btnCancel.Name = "btnCancel";
+            btnCancel.Text = "0 - Отмена";
+            btnCancel.TextAlign = ContentAlignment.TopCenter;
+            btnCancel.Location = new Point(6, 0);
+            btnCancel.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
+            btnCancel.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnCancel.ForeColor = Color.Black;
+            btnCancel.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnCancel);
+
+            Label btnAcc = new Label();
+            btnAcc.Name = "btnAcc";
+            btnAcc.Text = "1 - Приемка";
+            btnAcc.TextAlign = ContentAlignment.TopCenter;
+            btnAcc.Location = new Point(6, 19);
+            btnAcc.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
+            btnAcc.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnAcc.ForeColor = SS.Employer.CanAcceptance ? Color.Black : Color.DarkGray;
+            btnAcc.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnAcc);
+
+            Label btnAccCr = new Label();
+            btnAccCr.Name = "btnAccCr";
+            btnAccCr.Text = "2 - Кросс докинг";
+            btnAccCr.TextAlign = ContentAlignment.TopCenter;
+            btnAccCr.Location = new Point(6, 38);
+            btnAccCr.Size = new Size(CurrWidth < 320 ? 110 : 150, 18);
+            btnAccCr.Font = CurrWidth < 320 ? FontTahoma8Bold : FontTahoma10Bold;
+            btnAccCr.ForeColor = SS.Employer.CanAcceptance ? Color.Black : Color.DarkGray;
+            btnAccCr.BackColor = Color.LightGray;
+            pnlCurrent.Controls.Add(btnAccCr);
+
+            Text = "WPM " + Vers + " (" + Helper.GetShortFIO(SS.Employer.Name) + ")";
+            pnlCurrent.GetLabelByName("lblResult").Text = SS.Employer.Name + " Сессия открыта";
+            lblAction.Text = Obj.ExcStr;
+            lblAction.ForeColor = Color.Blue;
+        }        //Выбор работы (приемка)
+        private void ChoiseWorkAcceptance_review() { }
+
+        private void ControlCollect_view()
+        {
+            ControlCollect Obj = SS.MM as ControlCollect;
+
+            DataGridTextBoxColumn columnStyle;
+            DataGridTableStyle dgts;
+
+            DataGrid dgGoodsCC = new DataGrid();
+            dgGoodsCC.Location = new Point(2, 0);
+            dgGoodsCC.Name = "dgGoodsCC";
+            dgGoodsCC.Size = new System.Drawing.Size(CurrWidth - 6, 165);
+            dgGoodsCC.Font = CurrWidth < 320 ? FontTahoma8Regular : FontTahoma10Regular;
+            dgGoodsCC.DataSource = Obj.GoodsCC;
+            dgGoodsCC.RowHeadersVisible = false;
+            dgGoodsCC.Enabled = false;
+            #region Styles
+            dgGoodsCC.TableStyles.Clear();
+            dgts = new DataGridTableStyle();
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "№";
+            columnStyle.MappingName = "Number";
+            columnStyle.Width = CurrWidth < 320 ? 25 : 40;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Артикул";
+            columnStyle.MappingName = "Artikul";
+            columnStyle.Width = CurrWidth < 320 ? 48 : 70;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Наименование";
+            columnStyle.MappingName = "NameItem";
+            columnStyle.Width = CurrWidth < 320 ? 120 : 150;
+            dgts.GridColumnStyles.Add(columnStyle);
+            columnStyle = new DataGridTextBoxColumn();
+            columnStyle.HeaderText = "Кол-во";
+            columnStyle.MappingName = "Count";
+            columnStyle.Width = CurrWidth < 320 ? 30 : 50;
+            dgts.GridColumnStyles.Add(columnStyle);
+           
+            dgGoodsCC.TableStyles.Add(dgts);
+            #endregion
+            pnlCurrent.Controls.Add(dgGoodsCC);
+
+            lblAction.Text = "Ожидание команды";
+        }        //контроль
+        private void ControlCollect_review()
+        {
+            ControlCollect Obj = SS.MM as ControlCollect;
+
+            lblState.Text = "";
+            if (Obj.LabelControlCC != null)
+            {
+                lblState.Text = Obj.LabelControlCC;
+            }
+            DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
+            dgGoodsCC.DataSource = Obj.GoodsCC;
+            if (Obj.GoodsCC.Rows.Count == 0)
+            {
+                return;
+            }
+
+            //Снимаем выделение с предыдущей и следующей строки
+            if (Obj.GoodsCC.Rows.Count == 1)
+            {
+                //ничего не делаем
+            }
+            else if (Obj.IndexTableItem == 0)
+            {
+                dgGoodsCC.UnSelect(Obj.GoodsCC.Rows.Count - 1);
+                dgGoodsCC.UnSelect(1);
+
+            }
+            else if (Obj.IndexTableItem == Obj.GoodsCC.Rows.Count - 1)
+            {
+                dgGoodsCC.UnSelect(0);
+                dgGoodsCC.UnSelect(Obj.IndexTableItem - 1);
+
+            }
+            else if (Obj.IndexTableItem > 0)
+            {
+                dgGoodsCC.UnSelect(Obj.IndexTableItem + 1);
+                dgGoodsCC.UnSelect(Obj.IndexTableItem - 1);
+            }
+
+            //Выделяем текущую строку
+            dgGoodsCC.CurrentRowIndex = Obj.IndexTableItem;
+            dgGoodsCC.Select(dgGoodsCC.CurrentRowIndex);
+        }
+
+        private void UnLoading_view()
+        {
+            UnLoading Obj = SS.MM as UnLoading;
+
+            lblAction.ForeColor = Color.Blue;
+            lblAction.Text = Obj.ExcStr;
+           
+            Label lblDocInfo = new Label();
+            lblDocInfo.Font = FontTahoma10Bold;
+            lblDocInfo.Name = "lblDocInfo";
+            lblDocInfo.TextAlign = ContentAlignment.TopCenter;
+            lblDocInfo.Location = new Point(4, 125);
+            lblDocInfo.Size = new Size(CurrWidth - 10, 20);
+            pnlCurrent.Controls.Add(lblDocInfo);
+            
+            Label lblInfo1 = new Label();
+            lblInfo1.Font = FontTahoma14Bold;
+            lblInfo1.Name = "lblInfo1";
+            lblInfo1.TextAlign = ContentAlignment.TopCenter;
+            lblInfo1.Location = new Point(4, 24);
+            lblInfo1.Size = new Size(CurrWidth - 10, 70);
+            pnlCurrent.Controls.Add(lblInfo1);
+
+            Label lblInfo2 = new Label();
+            lblInfo2.Font = FontTahoma12Regular;
+            lblInfo2.Name = "lblInfo2";
+            lblInfo2.TextAlign = ContentAlignment.TopCenter;
+            lblInfo2.Location = new Point(4, 100);
+            lblInfo2.Size = new Size(CurrWidth - 10, 20);
+            pnlCurrent.Controls.Add(lblInfo2);
+
+            Label lblKey2 = new Label();
+            lblKey2.Font = FontTahoma10Bold;
+            lblKey2.BackColor = Color.LightGray;
+            lblKey2.Name = "lblKey2";
+            lblKey2.TextAlign = ContentAlignment.TopRight;
+            lblKey2.Location = new Point(CurrWidth - 116, 160);
+            lblKey2.Size = new Size(110, 18);
+            lblKey2.Text = "Esc - выход";
+            pnlCurrent.Controls.Add(lblKey2);
+
+            lblAction.Text = SS.ExcStr;
+        }
+        private void UnLoading_review()
+        {
+           
+            UnLoading Obj = SS.MM as UnLoading;
+            lblState.Text = "Свободная разргузка"; //Обновляем главную надпись
+            lblAction.Text = Obj.ExcStr;
+            Label lblInfo1 = pnlCurrent.GetLabelByName("lblInfo1");
+            Label lblInfo2 = pnlCurrent.GetLabelByName("lblInfo2");
+            Label lblDocInfo = pnlCurrent.GetLabelByName("lblDocInfo");
+
+            if (Obj.BoxUnLoad.Selected)
+            {
+                lblInfo1.Text = Obj.DocCC.NumberBill.Substring(Obj.DocCC.NumberBill.Length - 5, 2) + " "
+                                    + Obj.DocCC.NumberBill.Substring(Obj.DocCC.NumberBill.Length - 3)
+                                    + " сектор: " + Obj.DocCC.MainSectorName.Trim() + "-" + Obj.DocCC.NumberCC.ToString()
+                                    + " ворота: " + Obj.DocCC.Gate.Trim() + " адрес: " + Obj.DocCC.Adress.Trim();
+                lblInfo2.Text = "место № " + Obj.DocCC.NumberBox.ToString() + " из " + Obj.DocCC.AllBoxes.ToString();
+            }
+            else
+            {
+                lblInfo1.Text = "";
+                lblInfo2.Text = "";
+            }
+            if (Obj.AdressUnLoad.Selected)
+            {
+                lblDocInfo.Text = "Новый адрес: " + Obj.AdressUnLoad.Name;
+            }
+            else
+            {
+                lblDocInfo.Text = "";
+            }
+             
         } 
 
     

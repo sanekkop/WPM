@@ -8,8 +8,7 @@
         ChoiseWorkShipping,ChoiseWorkSample,ChoiseWorkAddressCard, Set, SetInicialization, SetCorrect, SetComplete, ChoiseDown, Down, DownComplete,
         FreeDownComplete, NewComplectation, NewComplectationComplete, SetSelfContorl, ChoiseWorkSupply,ItemCard,
         LoaderChoise, RefillChoise, LoaderChoiseLift, Loader, RefillSet, RefillSetComplete, RefillLayout, RefillLayoutComplete, RefillSetCorrect,
-
-        SetTransfer
+        SetTransfer, ChoiseWorkAcceptance, AcceptanceCross, UnLoading 
 
     }
 

@@ -53,7 +53,7 @@ namespace WPM
             }
             if (dgC.CurrentRowIndex != -1)
             {
-                pnlCurrent.GetLabelByName("lblClient").Text = SS.Consignment.Rows[dgC.CurrentRowIndex]["Client"].ToString();                   
+                //pnlCurrent.GetLabelByName("lblClient").Text = SS.Consignment.Rows[dgC.CurrentRowIndex]["Client"].ToString();                   
             }
         }
         private void ModeAcceptanceItemReView()
@@ -118,6 +118,21 @@ namespace WPM
             if (SS.AcceptedItem.IsRepeat)
             {
                 lblAction.ForeColor = Color.Red;
+            }
+            if (SS.AcceptedItem.ToMode == Mode.AcceptanceCross)
+            {
+                if (SS.PalletAcceptedItem != null && SS.PalletAcceptedItem.Selected)
+                {
+                    pnlCurrent.GetLabelByName("lblZoneAdress").Text = SS.PalletAcceptedItem.Pallete;
+                }
+                else if (SS.CurrentPalletAcceptedItem != null && SS.CurrentPalletAcceptedItem.Selected)
+                {
+                    pnlCurrent.GetLabelByName("lblZoneAdress").Text = SS.CurrentPalletAcceptedItem.Pallete;
+                }
+                else
+                {
+                    pnlCurrent.GetLabelByName("lblZoneAdress").Text = "нет адреса";
+                }
             }
         }
         private void ModeTransferInicializeReView()
@@ -213,15 +228,6 @@ namespace WPM
             }
 
         }
-        private void ModeControlCollectReView()
-        {
-            if (SS.LabelControlCC != null)
-            {
-                lblState.Text = SS.LabelControlCC;
-            }
-            DataGrid dgGoodsCC = pnlCurrent.GetDataGridByName("dgGoodsCC");
-            dgGoodsCC.DataSource = SS.GoodsCC;
-        }
         private void ModeHarmonizationInicializeReView()
         {
             Label lblFrom   = pnlCurrent.GetLabelByName("lblFrom");
@@ -238,23 +244,30 @@ namespace WPM
         private void ModeLoadingReView(bool MoveScrean)
         {
             int ToBeScrean = Screan;
+            
             if (MoveScrean)
             {
                 ToBeScrean = Math.Abs(Screan - 1);
             }
             if (ToBeScrean == 0)
             {
-                lblState.Text = SS.WayBill.View + " (погрузка)";
+               int TotalBoxes = 0;
+               DataRow[] DR = SS.WayBillDT.Select();
+               foreach (DataRow row in DR)
+               {
+                   TotalBoxes += Int32.Parse(row["Boxes"].ToString());
+               }
+
+               lblState.Text = SS.WayBill.View + " мест " + TotalBoxes.ToString();
             }
             else
             {
                 //На всякий случай, вдруг что нибудь накроется ниже и не отобразится заголовок заявки
                 lblState.Text = SS.WayBill.View + " (состояние)";
             }
-
-            DataGrid dgWayBill = pnlCurrent.GetDataGridByName("dgWayBill");
             int needIndex = SS.CurrentLine;
-            dgWayBill.DataSource       = SS.WayBillDT;
+            DataGrid dgWayBill = pnlCurrent.GetDataGridByName("dgWayBill");
+            dgWayBill.DataSource = SS.WayBillDT;
             if (SS.WayBillDT.Rows.Count <= needIndex)
             {
                 needIndex = SS.WayBillDT.Rows.Count - 1;
@@ -610,6 +623,7 @@ namespace WPM
             Label lblHeaderBalance = pnlCurrent.GetLabelByName("lblHeaderBalance");
             Label lblHeaderSum = pnlCurrent.GetLabelByName("lblHeaderSum");
             Label lblDetailsCount = pnlCurrent.GetLabelByName("lblDetailsCount");
+			Label lblScanPrinter = pnlCurrent.GetLabelByName("lblScanPrinter");
             PictureBox pbPhoto = pnlCurrent.GetPictureBoxByName("pbPhoto");
 
             lblInvCode.ForeColor = Color.Black;
@@ -630,6 +644,7 @@ namespace WPM
             lblCount.Text = SS.CCItem.Count.ToString() + " шт по 1";
             lblDetailsCount.Text = "Деталей: " + SS.CCItem.Details.ToString();
             lblAction.Text = SS.ExcStr;
+			lblScanPrinter.Visible = false;
             switch (SS.CurrentAction)
             {
                 case ActionSet.ScanAdress:
@@ -647,6 +662,12 @@ namespace WPM
                     tbCount.Visible = true;
                     tbCount.BringToFront();
                     tbCount.Focus();
+					break;
+
+                case ActionSet.Waiting:
+                    tbCount.Visible = false;
+                    lblScanPrinter.Visible = true;
+                    lblScanPrinter.Text = "Отсканируйте принтер!";
                     break;
             }
         }
@@ -947,6 +968,37 @@ namespace WPM
             lblAction.Text = SS.ExcStr;
         }
 
+        private void ModeAcceptanceCrossReView()
+        {
+            DataGrid dgNAI = pnlCurrent.GetDataGridByName("dgNotAcceptedItems");
+            DataGrid dgAI = pnlCurrent.GetDataGridByName("dgAcceptedItems");
+            DataGrid dgNAIС = pnlCurrent.GetDataGridByName("dgNotAcceptedItemsCross");
+            Label lblPrinter = pnlCurrent.GetLabelByName("lblPrinter");
+            lblPrinter.Text = SS.Printer.Description;
+            if (dgNAI.CurrentRowIndex != -1)
+            {
+                pnlCurrent.GetLabelByName("lblItem").Text = ((dgNAI.DataSource as BindingSource).Current as DataRowView).Row["ItemName"].ToString();
+            }
+            else
+            {
+                pnlCurrent.GetLabelByName("lblItem").Text = "";
+            }
+            if (dgAI.CurrentRowIndex != -1)
+            {
+                pnlCurrent.GetTextBoxByName("tbLabelCount").Text = SS.AcceptedItems.Rows[dgAI.CurrentRowIndex]["BoxCount"].ToString();
+                pnlCurrent.GetLabelByName("lblInvCode").Text = SS.AcceptedItems.Rows[dgAI.CurrentRowIndex]["InvCode"].ToString();
+            }
+            else
+            {
+                pnlCurrent.GetTextBoxByName("tbLabelCount").Text = "";
+                pnlCurrent.GetLabelByName("lblInvCode").Text = "";
+            }
+            if (dgNAIС.CurrentRowIndex != -1 && Screan == -2)
+            {
+                lblState.Text = ((dgNAIС.DataSource as BindingSource).Current as DataRowView).Row["ClientName"].ToString() + " № " + ((dgNAIС.DataSource as BindingSource).Current as DataRowView).Row["OrderName"].ToString();               
+            }
+        }
+        
         private void ReView()
         {
             switch (SS.CurrentMode)
@@ -988,9 +1040,6 @@ namespace WPM
                 case Mode.SamplePut:
                     lblState.Text = "Выкладка образцов (" + SS.SampleItems.Rows.Count.ToString() + ")";
                     ModeSamplePutReView();
-                    break;
-                case Mode.ControlCollect:
-                    ModeControlCollectReView();
                     break;
                 case Mode.HarmonizationInicialize:
                     ModeHarmonizationInicializeReView();
@@ -1034,7 +1083,10 @@ namespace WPM
                 case Mode.SetSelfContorl:
                     ModeSetSelfControlReView();
                     break;
-
+                case Mode.AcceptanceCross:
+                    lblState.Text = "Приемка (" + (Screan == 0 ? "накладные" : (Screan == -1 ? "НЕ принятый товар" : (Screan == 1 ? "принятый, печать этикеток" : "НЕ принятый товар клиента"))) + ")";
+                    ModeAcceptanceCrossReView();
+                    break;
                 //DEBUG!!!!!!!
                 case Mode.RefillLayout:
                     RefillLayout_review();

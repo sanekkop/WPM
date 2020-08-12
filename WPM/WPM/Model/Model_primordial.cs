@@ -112,7 +112,8 @@ namespace WPM
         private string BarcodePrefix;   //Префикс собственно генерируемых штрихкодов
         public int CurrentLine;         //
         public int OkRowIndex;
-        public RefWarehouse InventoryWarehouse;   //Склад по которому пробивается недостача
+        public RefWarehouse InventoryWarehouse;        //Склад по которому пробивается недостача
+        public RefWarehouse WarehouseForAddressItem;   //Склад по которому выводятся остатки и адреса
         private int FFlagBarcode;         
         public int FlagBarcode { get { return FFlagBarcode; } }// Определяет насколько удачная идентийикация товара для режима AcceptedItem
         private List<string> NewBarcodes;   //Список ШК введенных за сессию приемки
@@ -142,7 +143,11 @@ namespace WPM
         private DataTable FPallets;
         
         public string FPalletID;
+        public string FOrderID;
         public string FBarcodePallet;
+        public RefPalleteMove PalletAcceptedItem;
+        public RefPalleteMove CurrentPalletAcceptedItem;
+        public RefPalleteMove PalletEmptyOrder;
         private RefSection FAdressZoneTransfer;
         private string FZoneName;
         private string FZoneID;
@@ -724,1263 +729,7 @@ namespace WPM
             return result;
         }
 
-        //Вход в режимы
-        private bool ToModeAcceptance()
-        {
-            if (FConsignment == null)
-            {
-                FConsignment = new DataTable();
-                FConsignment.Columns.Add("Number", Type.GetType("System.Int32"));
-                FConsignment.Columns.Add("ACID", Type.GetType("System.String"));
-                FConsignment.Columns.Add("ParentIDD", Type.GetType("System.String"));
-                FConsignment.Columns.Add("DOCNO", Type.GetType("System.String"));
-                FConsignment.Columns.Add("DateDoc", Type.GetType("System.DateTime"));
-                FConsignment.Columns.Add("DateDocText", Type.GetType("System.String"));
-                FConsignment.Columns.Add("Client", Type.GetType("System.String"));
-                FConsignment.Columns.Add("CountRow", Type.GetType("System.Int32"));
-                FConsignment.Columns.Add("CountNotAcceptRow", Type.GetType("System.Int32"));
-            }
-
-            if (FNotAcceptedItems == null)
-            {
-                FNotAcceptedItems = new DataTable();
-                FNotAcceptedItems.Columns.Add("ID", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("LINENO_", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("Number", Type.GetType("System.Int32")); //Номер строки документа
-                FNotAcceptedItems.Columns.Add("ItemName", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("IDDOC", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("DOCNO", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("InvCode", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("Article", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("ArticleOnPack", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("ArticleFind", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("ArticleOnPackFind", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("ItemNameFind", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("Count", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("CountPackage", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("Coef", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("CoefView", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("LabelCount", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("Unit", Type.GetType("System.String"));
-                FNotAcceptedItems.Columns.Add("Price", Type.GetType("System.Decimal"));
-                FNotAcceptedItems.Columns.Add("Details", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("SeasonGroup", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("FlagFarWarehouse", Type.GetType("System.Int32"));
-                FNotAcceptedItems.Columns.Add("StoregeSize", Type.GetType("System.Int32"));
-
-                FAcceptedItems = FNotAcceptedItems.Clone();
-            }
-            else
-            {
-                FNotAcceptedItems.Rows.Clear();
-                FAcceptedItems.Rows.Clear();
-            }
-
-            if (FPallets == null)
-            {
-                FPallets = new DataTable();
-                FPallets.Columns.Add("ID", Type.GetType("System.String"));
-                FPallets.Columns.Add("Barcode", Type.GetType("System.String"));
-                FPallets.Columns.Add("Name", Type.GetType("System.String"));
-                FPallets.Columns.Add("AdressID", Type.GetType("System.String"));
-               
-            }
-            //занулим паллету
-            //if (FCurrentMode != Mode.AcceptedItem)
-           // {
-            //    FPalletID = "";
-            //}
-
-            if (FConsignment.Rows.Count == 0)
-            {
-                //получим задание еще раз
-                //Запрос задания у 1С
-                Dictionary<string, object> DataMapWrite = new Dictionary<string, object>();
-                DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"] = ExtendID(Employer.ID, "Спр.Сотрудники");
-
-                string resultMessage;
-                if (!ExecCommandOnlyResultNew("QuestAcceptance", DataMapWrite, out resultMessage))
-                {
-                    FExcStr = "Ошибка запроса заданий!";
-                    return false;
-                }
-                if (resultMessage.TrimEnd() == "Заданий нет!")
-                {
-                    FExcStr = "Заданий нет!";
-                    return false;
-                }
-                //теперь подтянем смами документы
-                String TextQuery = "SELECT " +
-                "identity(int, 1, 1) as Number, " +
-                "AC.iddoc as ACID," +
-                "journ.iddoc as ParentIDD," +
-                "Clients.descr as Client," +
-                "AC.$АдресПоступление.КолСтрок as CountRow," +
-                "journ.docno as DocNo," +
-                "CAST(LEFT(journ.date_time_iddoc, 8) as datetime) as DateDoc," +
-                "CONVERT(char(8), CAST(LEFT(journ.date_time_iddoc,8) as datetime), 4) as DateDocText " +
-                "into #temp " +
-                "FROM DH$АдресПоступление as AC (nolock) " +
-                "LEFT JOIN _1sjourn as journ (nolock) " +
-                "     ON journ.iddoc = right(AC.$АдресПоступление.ДокументОснование , 9) " +
-                "LEFT JOIN DH$ПриходнаяКредит as PK (nolock) " +
-                "     ON journ.iddoc = PK.iddoc " +
-                "LEFT JOIN $Спр.Клиенты as Clients (nolock) " +
-                "     ON PK.$ПриходнаяКредит.Клиент = Clients.id " +
-                "WHERE AC.iddoc in (:Docs) " +
-                " select * from #temp " +
-                " drop table #temp ";
-                TextQuery = TextQuery.Replace(":Docs", resultMessage);
-                DataTable DT;
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                foreach (DataRow dr in DT.Rows)
-                {
-                    if (!LockDocAccept(dr["ACID"].ToString()))
-                    {
-                        DT.Rows.Remove(dr);
-                    }
-                }
-                FConsignment.Merge(DT, false, MissingSchemaAction.Ignore);
-                DT.Clear();
-
-            }
-
-            if (FConsignment.Rows.Count > 0)
-            {
-                DataRow[] DR = FConsignment.Select();
-                string Docs = "";
-                foreach (DataRow dr in DR)
-                {
-                    Docs += ", '" + dr["ACID"].ToString() + "'";
-                }
-                Docs = Docs.Substring(2);   //Убираем спедери запятые
-
-                //Непринятый товар
-                string TextQuery =
-                    "SELECT " +
-                        "right(Journ.docno,5) as DOCNO," +
-                        "Supply.iddoc as iddoc," +
-                        "Goods.id as id," +
-                        "Goods.Descr as ItemName," +
-                        "Goods.$Спр.Товары.ИнвКод as InvCode," +
-                        "Goods.$Спр.Товары.Артикул as Article," +
-                        "Goods.$Спр.Товары.АртикулНаУпаковке as ArticleOnPack," +
-                        "Goods.$Спр.Товары.Прих_Цена as Price," +
-                        "Goods.$Спр.Товары.КоличествоДеталей as Details, " +
-                        "CASE WHEN round(Supply.$АдресПоступление.Количество /ISNULL(Package.Coef, 1), 0)*ISNULL(Package.Coef, 1) = Supply.$АдресПоступление.Количество " +
-                            "THEN ISNULL(Package.Coef, 1) ELSE 1 END as Coef, " +
-                        "CASE WHEN round(Supply.$АдресПоступление.Количество /ISNULL(Package.Coef, 1), 0)*ISNULL(Package.Coef, 1) = Supply.$АдресПоступление.Количество " +
-                            "THEN round(Supply.$АдресПоступление.Количество /ISNULL(Package.Coef, 1), 0) " +
-                            "ELSE Supply.$АдресПоступление.Количество END as CountPackage, " +
-                        "Supply.$АдресПоступление.Количество as Count," +
-                        "Supply.$АдресПоступление.ЕдиницаШК as Unit," +
-                        "Supply.$АдресПоступление.КоличествоЭтикеток as LabelCount," +
-                        "Supply.$АдресПоступление.НомерСтрокиДока as Number," +
-                        "Supply.$АдресПоступление.ГруппаСезона as SeasonGroup, " +
-                        "SypplyHeader.$АдресПоступление.ДальнийСклад as FlagFarWarehouse," +
-                        "Supply.LineNO_ as LineNO_, " +
-                    //"isnull(GS.$Спр.ТоварныеСекции.РазмерХранения , 0) as StoregeSize " +
-                        "isnull(GS.$Спр.ТоварныеСекции.РасчетныйРХ , 0) as StoregeSize " +
-                    "FROM " +
-                        "DT$АдресПоступление as Supply (nolock) " +
-                        "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                            "ON Goods.ID = Supply.$АдресПоступление.Товар " +
-                        "LEFT JOIN DH$АдресПоступление as SypplyHeader (nolock) " +
-                            "ON SypplyHeader.iddoc = Supply.iddoc " +
-                        "LEFT JOIN _1sjourn as Journ (nolock) " +
-                            "ON Journ.iddoc = Right(SypplyHeader.$АдресПоступление.ДокументОснование , 9) " +
-                        "LEFT JOIN ( " +
-                                "SELECT " +
-                                    "Units.parentext as ItemID, " +
-                                    "min(Units.$Спр.ЕдиницыШК.Коэффициент ) as Coef " +
-                                "FROM " +
-                                    "$Спр.ЕдиницыШК as Units (nolock) " +
-                                "WHERE " +
-                                    "Units.$Спр.ЕдиницыШК.ОКЕИ = :OKEIPackage " +
-                                    "and Units.ismark = 0 " +
-                                    "and not Units.$Спр.ЕдиницыШК.Коэффициент = 0 " +
-                                "GROUP BY " +
-                                    "Units.parentext " +
-                                ") as Package " +
-                            "ON Package.ItemID = Goods.ID " +
-                        "LEFT JOIN $Спр.ТоварныеСекции as GS (nolock) " +
-                            "on GS.parentext = goods.id and gs.$Спр.ТоварныеСекции.Склад = :Warehouse " +
-                    "WHERE " +
-                        "Supply.IDDOC in (:Docs) " +
-                        "and Supply.$АдресПоступление.Состояние0 = 0 " +
-                    "ORDER BY " +
-                        "Journ.docno, Supply.LineNO_ ";
-                TextQuery = TextQuery.Replace(":Docs", Docs);
-                QuerySetParam(ref TextQuery, "OKEIPackage", OKEIPackage);
-                QuerySetParam(ref TextQuery, "Warehouse", Const.MainWarehouse);
-                DataTable DT;
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                DT.Columns.Add("ArticleFind", Type.GetType("System.String"));
-                DT.Columns.Add("ArticleOnPackFind", Type.GetType("System.String"));
-                DT.Columns.Add("ItemNameFind", Type.GetType("System.String"));
-                DT.Columns.Add("CoefView", Type.GetType("System.String"));
-                for (int row = 0; row < DT.Rows.Count; row++)
-                {
-                    DT.Rows[row]["ArticleFind"] = Helper.SuckDigits(DT.Rows[row]["Article"].ToString().Trim());
-                    DT.Rows[row]["ArticleOnPackFind"] = Helper.SuckDigits(DT.Rows[row]["ArticleOnPack"].ToString().Trim());
-                    DT.Rows[row]["ItemNameFind"] = Helper.SuckDigits(DT.Rows[row]["ItemName"].ToString().Trim());
-                    DT.Rows[row]["CoefView"] = ((int)(decimal)DT.Rows[row]["Coef"] == 1 ? "??  " : "")
-                                                            + ((int)(decimal)DT.Rows[row]["Coef"]).ToString();
-                }
-                FNotAcceptedItems.Merge(DT, false, MissingSchemaAction.Ignore);
-
-                //Теперь принятый товар
-                TextQuery =
-                    "SELECT " +
-                        "right(Journ.docno,5) as DOCNO," +
-                        "Supply.iddoc as iddoc," +
-                        "Goods.id as id," +
-                        "Goods.Descr as ItemName," +
-                        "Goods.$Спр.Товары.ИнвКод as InvCode," +
-                        "Goods.$Спр.Товары.Артикул as Article," +
-                        "Goods.$Спр.Товары.АртикулНаУпаковке as ArticleOnPack," +
-                        "Goods.$Спр.Товары.Прих_Цена as Price," +
-                        "Goods.$Спр.Товары.КоличествоДеталей as Details, " +
-                        "CASE WHEN round(Supply.$АдресПоступление.Количество /ISNULL(Package.Coef, 1), 0)*ISNULL(Package.Coef, 1) = Supply.$АдресПоступление.Количество " +
-                            "THEN ISNULL(Package.Coef, 1) ELSE 1 END as Coef, " +
-                        "CASE WHEN round(Supply.$АдресПоступление.Количество /ISNULL(Package.Coef, 1), 0)*ISNULL(Package.Coef, 1) = Supply.$АдресПоступление.Количество " +
-                            "THEN round(Supply.$АдресПоступление.Количество /ISNULL(Package.Coef, 1), 0) " +
-                            "ELSE Supply.$АдресПоступление.Количество END as CountPackage, " +
-                        "Supply.$АдресПоступление.Количество as Count," +
-                        "Supply.$АдресПоступление.ЕдиницаШК as Unit," +
-                        "Supply.$АдресПоступление.КоличествоЭтикеток as LabelCount," +
-                        "Supply.$АдресПоступление.НомерСтрокиДока as Number," +
-                        "Supply.$АдресПоступление.ГруппаСезона as SeasonGroup," +
-                        "SypplyHeader.$АдресПоступление.ДальнийСклад as FlagFarWarehouse," +
-                        "Supply.LineNO_ as LineNO_, " +
-                    //"isnull(GS.$Спр.ТоварныеСекции.РазмерХранения , 0) StoregeSize " + 
-                        "isnull(GS.$Спр.ТоварныеСекции.РасчетныйРХ , 0) StoregeSize " +
-                     "FROM DT$АдресПоступление as Supply (nolock) " +
-                        "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                            "ON Goods.ID = Supply.$АдресПоступление.Товар " +
-                        "LEFT JOIN DH$АдресПоступление as SypplyHeader (nolock) " +
-                            "ON SypplyHeader.iddoc = Supply.iddoc " +
-                        "LEFT JOIN _1sjourn as Journ (nolock) " +
-                            "ON Journ.iddoc = Right(SypplyHeader.$АдресПоступление.ДокументОснование , 9) " +
-                        "LEFT JOIN ( " +
-                                "SELECT " +
-                                    "Units.parentext as ItemID, " +
-                                    "min(Units.$Спр.ЕдиницыШК.Коэффициент ) as Coef " +
-                                "FROM " +
-                                    "$Спр.ЕдиницыШК as Units (nolock) " +
-                                "WHERE " +
-                                    "Units.$Спр.ЕдиницыШК.ОКЕИ = :OKEIPackage " +
-                                    "and Units.ismark = 0 " +
-                                    "and not Units.$Спр.ЕдиницыШК.Коэффициент = 0 " +
-                                "GROUP BY " +
-                                    "Units.parentext " +
-                                ") as Package " +
-                            "ON Package.ItemID = Goods.ID " +
-                        "LEFT JOIN $Спр.ТоварныеСекции as GS (nolock) " +
-                            "on GS.parentext = goods.id and gs.$Спр.ТоварныеСекции.Склад = :Warehouse " +
-                    "WHERE Supply.IDDOC in (:Docs) " +
-                        "and Supply.$АдресПоступление.Состояние0 = 1 " +
-                        "and Supply.$АдресПоступление.ФлагПечати = 1 " +
-                        "and Supply.$АдресПоступление.Сотрудник0 = :Employer " +
-                    "ORDER BY Journ.docno, Supply.$АдресПоступление.Дата0 , Supply.$АдресПоступление.Время0 ";
-                TextQuery = TextQuery.Replace(":Docs", Docs);
-                QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-                QuerySetParam(ref TextQuery, "OKEIPackage", OKEIPackage);
-                QuerySetParam(ref TextQuery, "Warehouse", Const.MainWarehouse);
-                DT.Clear();
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                DT.Columns.Add("CoefView", Type.GetType("System.String"));
-                for (int row = 0; row < DT.Rows.Count; row++)
-                {
-                    DT.Rows[row]["CoefView"] = ((int)(decimal)DT.Rows[row]["Coef"] == 1 ? "??  " : "")
-                                                            + ((int)(decimal)DT.Rows[row]["Coef"]).ToString();
-                }
-                FAcceptedItems.Merge(DT, false, MissingSchemaAction.Ignore);
-                if (FPallets.Rows.Count == 0)
-                {
-                    //Теперь принятые паллеты
-                    TextQuery =
-                        "SELECT " +
-                            "Supply.$АдресПоступление.Паллета as ID, " +
-                            "min(Pallets.$Спр.ПеремещенияПаллет.ШКПаллеты ) as Barcode, " +
-                            "min(SUBSTRING(Pallets.$Спр.ПеремещенияПаллет.ШКПаллеты ,8,4)) as Name, " +
-                            "min(Pallets.$Спр.ПеремещенияПаллет.Адрес0 ) as AdressID " +
-                         "FROM DT$АдресПоступление as Supply (nolock) " +
-                            "INNER JOIN $Спр.ПеремещенияПаллет as Pallets (nolock) " +
-                                "ON Pallets.ID = Supply.$АдресПоступление.Паллета " +
-                        "WHERE Supply.IDDOC in (:Docs) " +
-                            "and Supply.$АдресПоступление.Состояние0 = 1 " +
-                            "and Supply.$АдресПоступление.ФлагПечати = 1 " +
-                            "and Supply.$АдресПоступление.Сотрудник0 = :Employer " +
-                        "GROUP BY " +
-                            "Supply.$АдресПоступление.Паллета " +
-                        "ORDER BY " +
-                            "Supply.$АдресПоступление.Паллета ";
-                    TextQuery = TextQuery.Replace(":Docs", Docs);
-                    QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-                    DT.Clear();
-                    if (!ExecuteWithRead(TextQuery, out DT))
-                    {
-                        return false;
-                    }
-                    FPallets.Merge(DT, false, MissingSchemaAction.Ignore);
-                    if (DT.Rows.Count > 0)
-                    {
-                        FPalletID = FPallets.Rows[DT.Rows.Count - 1]["ID"].ToString();
-                        FBarcodePallet = FPallets.Rows[DT.Rows.Count - 1]["Barcode"].ToString();
-                    }
-                    else
-                    {
-                        FPalletID = "";
-                        FBarcodePallet = "";
-                    }
-                }
-                //Расчитываем строчечки
-                DR = FConsignment.Select();
-                foreach (DataRow dr in DR)
-                {
-                    DataRow[] tmpDR = FNotAcceptedItems.Select("IDDOC = '" + dr["ACID"].ToString() + "'");
-                    dr["CountNotAcceptRow"] = tmpDR.Length;
-                }
-            }
-            
-            FCurrentMode = Mode.Acceptance;
-            return true;
-        } // ToModeAcceptance
-        private bool ToModeAcceptedItem(string ItemID, string IDDoc, Mode ToMode)
-        {
-            return ToModeAcceptedItem(ItemID, IDDoc, ToMode, 0, false);
-        }
-        private bool ToModeAcceptedItem(string ItemID, string IDDoc, Mode ToMode, int InPartyCount, bool OnShelf)
-        {
-            //проверяем наличие отсканированной паллеты
-            if ((FPalletID == "") && (ToMode == Mode.Acceptance))
-            {
-                FExcStr = "Не выбрана паллета";
-                return false;
-            }
-            AdressConditionItem = null;
-            //Если был дисконнект, то это проявиться после нижеследующего запроса
-            //и дальше будет, не приемка, а редактирование карточки, для этого запрос и помещен в начало
-            if (!LoadUnits(ItemID))
-            {
-                return false;
-            }
-
-            //FExcStr - несет смысл
-            AcceptedItem = new StructItem();
-            AcceptedItem.GenerateBarcode = false;
-            if (NewBarcodes == null)
-            {
-                NewBarcodes = new List<string>();
-            }
-            else
-            {
-                NewBarcodes.Clear();
-            }
-
-            //Определяем имеется ли данный товар в списке принимаемых
-            CurrentRowAcceptedItem = null;
-            int AllCount = 0;
-            DataRow[] DR;
-
-            if (ToMode == Mode.Acceptance)
-            {
-                DR = FNotAcceptedItems.Select("ID = '" + ItemID + "'");
-                if (DR.Length > 1 && IDDoc != "")
-                {
-                    foreach (DataRow dr in DR)
-                    {
-                        if (dr["IDDOC"].ToString() == IDDoc)
-                        {
-                            if (CurrentRowAcceptedItem == null)
-                            {
-                                CurrentRowAcceptedItem = dr;
-                            }
-                        }
-                        AllCount += (int)dr["Count"];
-                    }
-                }
-                else if (DR.Length > 0) //Один товар или не указана строка документа
-                {
-                    CurrentRowAcceptedItem = DR[0];
-                    foreach (DataRow dr in DR)
-                    {
-                        AllCount += (int)dr["Count"];
-                    }
-                }
-                //иначе это скан товара не из списка!
-            }
-
-            //БЛОКИРУЕМ ТОВАР
-            if (!LockItem(ItemID))
-            {
-                return false;
-            }
-
-            //ОПРЕДЕЛЯЕМ ОСТАТКИ И АДРЕСА
-            string TextQuery =
-                "DECLARE @curdate DateTime; " + 
-                "SELECT @curdate = DATEADD(DAY, 1 - DAY(curdate), curdate) FROM _1ssystem (nolock); " + 
-                "SELECT " + 
-                    "CAST(sum(CASE WHEN Main.Warehouse = :MainWarehouse THEN Main.Balance ELSE 0 END) as int) as BalanceMain, " + 
-                    "CAST(sum(CASE WHEN Main.Warehouse = :BufferWarehouse THEN Main.Balance ELSE 0 END) as int) as BalanceBuffer, " + 
-                    "ISNULL((" + 
-                        "SELECT top 1 " +
-                            "Section.descr " +
-                        "FROM _1sconst as Const (nolock) " + 
-                            "LEFT JOIN $Спр.Секции as Section (nolock) " +
-                                "ON Section.id = left(Const.value, 9) " +
-                        "WHERE " + 
-                            "Const.id = $Спр.ТоварныеСекции.Секция " + 
-                            "and Const.date <= :DateNow " + 
-                            "and Const.OBJID in (" + 
-                                    "SELECT id FROM $Спр.ТоварныеСекции " +
-                                    "WHERE " + 
-                                        "$Спр.ТоварныеСекции.Склад = :MainWarehouse " + 
-                                        "and parentext = :Item)" + 
-                        "ORDER BY " + 
-                            "Const.date DESC, Const.time DESC, Const.docid DESC), '<не задан>') as AdressMain, " +
-                    "ISNULL((" + 
-                        "SELECT top 1 " +
-                            "Section.descr " +
-                        "FROM _1sconst as Const (nolock) " + 
-                            "LEFT JOIN $Спр.Секции as Section (nolock) " +
-                                "ON Section.id = left(Const.value, 9) " +
-                        "WHERE " + 
-                            "Const.id = $Спр.ТоварныеСекции.Секция " + 
-                            "and Const.date <= :DateNow " + 
-                            "and Const.OBJID in (" + 
-                                    "SELECT id FROM $Спр.ТоварныеСекции " +
-                                    "WHERE " + 
-                                        "$Спр.ТоварныеСекции.Склад = :BufferWarehouse " + 
-                                        "and parentext = :Item)" + 
-                        "ORDER BY " + 
-                            "Const.date DESC, Const.time DESC, Const.docid DESC), '<не задан>') as AdressBuffer " +
-                "FROM (" + 
-                        "SELECT " + 
-                            "$Рег.ОстаткиТоваров.Склад as Warehouse, " + 
-                            "$Рег.ОстаткиТоваров.Товар as Item, " +
-                            "$Рег.ОстаткиТоваров.ОстатокТовара as Balance " +
-                        "FROM " + 
-                            "RG$Рег.ОстаткиТоваров (nolock) " +
-                        "WHERE " + 
-                            "period = @curdate " +
-                            "and $Рег.ОстаткиТоваров.Товар = :Item " +
-                            "and $Рег.ОстаткиТоваров.Склад in (:MainWarehouse, :BufferWarehouse) " +
-                        "UNION ALL " +
-                        "SELECT " +
-                            ":MainWarehouse, :Item, 0 " +
-                        ") as Main " + 
-                "GROUP BY Main.Item";
-            QuerySetParam(ref TextQuery, "DateNow", DateTime.Now);
-            QuerySetParam(ref TextQuery, "Item", ItemID);
-            QuerySetParam(ref TextQuery, "BufferWarehouse", BufferWarehouse);
-            QuerySetParam(ref TextQuery, "MainWarehouse", Const.MainWarehouse);
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            AcceptedItem.BalanceMain    = (int)DT.Rows[0]["BalanceMain"];
-            AcceptedItem.BalanceBuffer  = (int)DT.Rows[0]["BalanceBuffer"];
-            AcceptedItem.AdressMain     = DT.Rows[0]["AdressMain"].ToString();
-            AcceptedItem.AdressBuffer   = DT.Rows[0]["AdressBuffer"].ToString();
-            AcceptedItem.IsRepeat       = false;
-
-            Dictionary<string, object> DataMapWrite = new Dictionary<string, object>();
-            if (CurrentRowAcceptedItem == null)
-            {
-                //Подсосем остатки в разрезе адресов и состояний
-                TextQuery = 
-                    "DECLARE @curdate DateTime; " + 
-                    "SELECT @curdate = DATEADD(DAY, 1 - DAY(curdate), curdate) FROM _1ssystem (nolock); " + 
-                    "SELECT " +
-                            "min(Section.descr) as Adress, " +
-                            "CASE " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = -10 THEN '-10 Автокорректировка' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = -2 THEN '-2 В излишке' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = -1 THEN '-1 В излишке (пересчет)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 0 THEN '00 Не существует' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 1 THEN '01 Приемка' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 2 THEN '02 Хороший на месте' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 3 THEN '03 Хороший (пересчет)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 4 THEN '04 Хороший (движение)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 7 THEN '07 Бракованный на месте' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 8 THEN '08 Бракованный (пересчет)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 9 THEN '09 Бракованный (движение)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 12 THEN '12 Недостача' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 13 THEN '13 Недостача (пересчет)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 14 THEN '14 Недостача (движение)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 17 THEN '17 Недостача подтвержденная' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 18 THEN '18 Недостача подт.(пересчет)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 19 THEN '19 Недостача подт.(движение)' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 22 THEN '22 Пересорт излишек' " +
-                                "WHEN RegAOT.$Рег.АдресОстаткиТоваров.Состояние = 23 THEN '23 Пересорт недостача' " +
-                                "ELSE rtrim(cast(RegAOT.$Рег.АдресОстаткиТоваров.Состояние as char)) + ' <неизвестное состояние>' END as Condition, " + 
-                            "cast(sum(RegAOT.$Рег.АдресОстаткиТоваров.Количество ) as int) as Count " + 
-                        "FROM " + 
-                            "RG$Рег.АдресОстаткиТоваров as RegAOT (nolock) " + 
-                            "LEFT JOIN $Спр.Секции as Section (nolock) " +
-                                "ON Section.id = RegAOT.$Рег.АдресОстаткиТоваров.Адрес " +
-                        "WHERE " + 
-                            "RegAOT.period = @curdate " +
-                            "and RegAOT.$Рег.АдресОстаткиТоваров.Товар = :ItemID " +
-                            "and RegAOT.$Рег.АдресОстаткиТоваров.Склад = :Warehouse " +
-                        "GROUP BY " +
-                            "RegAOT.$Рег.АдресОстаткиТоваров.Адрес , " + 
-                            "RegAOT.$Рег.АдресОстаткиТоваров.Товар , " +
-                            "RegAOT.$Рег.АдресОстаткиТоваров.Состояние " +
-                        "HAVING sum(RegAOT.$Рег.АдресОстаткиТоваров.Количество ) <> 0 " + 
-                        "ORDER BY Adress, Condition" ;
-                QuerySetParam(ref TextQuery, "DateNow",     DateTime.Now);
-                QuerySetParam(ref TextQuery, "ItemID",      ItemID);
-                QuerySetParam(ref TextQuery, "Warehouse",   Const.MainWarehouse);
-                if (!ExecuteWithRead(TextQuery, out AdressConditionItem))
-                {
-                    AdressConditionItem = null;
-                }
-
-                //Я не знаю что это...
-                TextQuery = 
-                    "SELECT " + 
-                        "Goods.Descr as ItemName," + 
-                        "Goods.$Спр.Товары.ИнвКод as InvCode, " + 
-                        "Goods.$Спр.Товары.Артикул as Article, " +
-                        "Goods.$Спр.Товары.КоличествоДеталей as Details, " + 
-                        "Goods.$Спр.Товары.БазоваяЕдиницаШК as BaseUnitID, " + 
-                        "Goods.$Спр.Товары.МинПартия as MinParty, " +
-                        "Goods.$Спр.Товары." + (ToMode == Mode.Acceptance ? "Прих_Цена" : "Опт_Цена") + " as Price,  " +
-                        //"isnull(RefSections.$Спр.ТоварныеСекции.РазмерХранения , 0) as StoregeSize " +
-                        "isnull(RefSections.$Спр.ТоварныеСекции.РасчетныйРХ , 0) as StoregeSize " + 
-                    "FROM $Спр.Товары as Goods (nolock) " + 
-                        "left join $Спр.ТоварныеСекции as RefSections (nolock) " +
-                            "on RefSections.parentext = Goods.id and RefSections.$Спр.ТоварныеСекции.Склад = :warehouse " +
-                    "WHERE Goods.id = :Item ";
-                QuerySetParam(ref TextQuery, "Item", ItemID);
-                QuerySetParam(ref TextQuery, "warehouse", Const.MainWarehouse);
-                DT.Clear();
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                AcceptedItem.Details = (int)(decimal)DT.Rows[0]["Details"];
-                AcceptedItem.NowDetails = AcceptedItem.Details;
-
-                AcceptedItem.ID         = ItemID;
-                AcceptedItem.Name       = DT.Rows[0]["ItemName"].ToString();
-                AcceptedItem.InvCode    = DT.Rows[0]["InvCode"].ToString();
-                AcceptedItem.Acticle    = DT.Rows[0]["Article"].ToString();
-                AcceptedItem.BaseUnitID = DT.Rows[0]["BaseUnitID"].ToString();
-                AcceptedItem.MinParty   = (int)(decimal)DT.Rows[0]["MinParty"];
-                AcceptedItem.Count      = 0;
-                AcceptedItem.Price      = (decimal)DT.Rows[0]["Price"];
-                AcceptedItem.Acceptance = false;
-                AcceptedItem.ToMode     = ToMode;
-                AcceptedItem.BindingAdressFlag = false;
-                AcceptedItem.StoregeSize = (int)(decimal)DT.Rows[0]["StoregeSize"];
-
-                //Если это необходимо, то определяем количество товара для склада инвентаризации
-                if (AcceptedItem.ToMode != Mode.Inventory || InventoryWarehouse.ID == Const.MainWarehouse)
-                {
-                    AcceptedItem.CurrentBalance = AcceptedItem.BalanceMain;
-                }
-                else if (InventoryWarehouse.ID == BufferWarehouse)
-                {
-                    AcceptedItem.CurrentBalance = AcceptedItem.BalanceBuffer;
-                }
-                else
-                {
-                    //Остатков этого склада нет!
-                    TextQuery = 
-                        "DECLARE @curdate DateTime; " + 
-                        "SELECT @curdate = DATEADD(DAY, 1 - DAY(curdate), curdate) FROM _1ssystem (nolock); " + 
-                        "SELECT sum(Main.Balance) as Balance " +
-                            "FROM " + 
-                                "(SELECT " + 
-                                    "$Рег.ОстаткиТоваров.Товар as Item, " +
-                                    "$Рег.ОстаткиТоваров.ОстатокТовара as Balance " +
-                                "FROM " + 
-                                    "RG$Рег.ОстаткиТоваров (nolock) " +
-                                "WHERE " + 
-                                    "period = @curdate " +
-                                    "and $Рег.ОстаткиТоваров.Товар = :ItemID " +
-                                    "and $Рег.ОстаткиТоваров.Склад = :Warehouse " +
-                                "UNION ALL " +
-                                "SELECT :ItemID, 0 " +
-                                ") as Main " + 
-                            "GROUP BY Main.Item;";
-                    QuerySetParam(ref TextQuery, "DateNow",     DateTime.Now);
-                    QuerySetParam(ref TextQuery, "ItemID",      ItemID);
-                    QuerySetParam(ref TextQuery, "Warehouse",   InventoryWarehouse.ID);
-                    if (!ExecuteWithRead(TextQuery, out DT))
-                    {
-                        return false;
-                    }
-                    AcceptedItem.CurrentBalance = (int)(decimal)DT.Rows[0]["Balance"];
-                }
-                //А теперь имя склада!
-                if (AcceptedItem.ToMode != Mode.Inventory)
-                {
-                    TextQuery = 
-                        "SELECT descr as Name FROM $Спр.Склады (nolock) WHERE ID = :Warehouse";
-                    QuerySetParam(ref TextQuery, "Warehouse", Const.MainWarehouse);
-                    if (!ExecuteWithRead(TextQuery, out DT))
-                    {
-                        return false;
-                    }
-                    AcceptedItem.CurrentWarehouseName = DT.Rows[0]["Name"].ToString();
-                }
-                else
-                {
-                    AcceptedItem.CurrentWarehouseName = InventoryWarehouse.Name;
-                }
-
-                //
-                if (ToMode == Mode.Transfer)
-                {
-                    if (ATDoc.ToWarehouseSingleAdressMode)
-                    {
-                        DR = FTransferReadyItems.Select("ID = '" + AcceptedItem.ID + "'");
-                        if (DR.Length > 0)
-                        {
-                            AcceptedItem.BindingAdress = DR[0]["Adress1"].ToString();
-                            AcceptedItem.BindingAdressName = DR[0]["AdressName"].ToString();
-                            AcceptedItem.BindingAdressFlag = true;
-                        }
-                        else if (!Employer.CanMultiadress && AcceptedItem.CurrentBalance > 0)
-                        {
-                            //ОПРЕДЕЛИМ РЕКОМЕНДУЕМЫЙ АДРЕС
-                            TextQuery =
-                                "SELECT top 1 " +
-                                " left(const.value, 9) as Adress, " +
-                                " section.descr as AdressName " + 
-                                "FROM _1sconst as const(nolock) " + 
-                                "LEFT JOIN $Спр.Секции as Section (nolock) " +
-                                        "ON Section.id = left(value, 9) " + 
-                                "WHERE " + 
-                                    "const.id = $Спр.ТоварныеСекции.Секция " + 
-                                    "and const.date <= :DateNow " + 
-                                    "and const.OBJID in (" + 
-                                                   "SELECT id FROM $Спр.ТоварныеСекции (nolock) " +
-                                                    "WHERE " + 
-                                                        "$Спр.ТоварныеСекции.Склад = :Warehouse " + 
-                                                        "and parentext = :Item) " + 
-                                "ORDER BY " + 
-                                    "const.date DESC, const.time DESC, const.docid DESC ";
-                            QuerySetParam(ref TextQuery, "DateNow", DateTime.Now);
-                            QuerySetParam(ref TextQuery, "Item", ItemID);
-                            QuerySetParam(ref TextQuery, "Warehouse", ATDoc.ToWarehouseID);
-                            if (!ExecuteWithRead(TextQuery, out DT))
-                            {
-                                return false;
-                            }
-                            if (DT.Rows.Count == 1)
-                            {
-                                AcceptedItem.BindingAdress = DT.Rows[0]["Adress"].ToString();
-                                AcceptedItem.BindingAdressName = DT.Rows[0]["AdressName"].ToString();
-                                AcceptedItem.BindingAdressFlag = true;
-                            }
-                        }
-                    }
-                }
-
-
-                if (AcceptedItem.ToMode == Mode.Acceptance)
-                {
-                    FExcStr = "РЕДАКТИРОВАНИЕ КАРТОЧКИ! ТОВАРА НЕТ В СПИСКЕ ПРИНИМАЕМЫХ!";
-                }
-                else if (AcceptedItem.ToMode == Mode.Inventory)
-                {
-                    FExcStr = "РЕДАКТИРОВАНИЕ КАРТОЧКИ!";
-                }
-                else if (AcceptedItem.ToMode == Mode.SampleInventory)
-                {
-                    FExcStr = "ОБРАЗЕЦ! " + FExcStr;
-                }
-                else if (AcceptedItem.ToMode == Mode.SamplePut)
-                {
-                    FExcStr = "ОБРАЗЕЦ (выкладка)! " + FExcStr;
-                }
-                else if (AcceptedItem.ToMode == Mode.Transfer || AcceptedItem.ToMode == Mode.NewInventory || AcceptedItem.ToMode == Mode.Harmonization || AcceptedItem.ToMode == Mode.HarmonizationPut)
-                {
-                    if (OnShelf)
-                    {
-                        RefItem Item = new RefItem(this);
-                        Item.FoundID(AcceptedItem.ID);
-                        RefSection BindingAdress = new RefSection(this);
-                        BindingAdress.FoundID(AcceptedItem.BindingAdress);
-                        
-                        if (AcceptedItem.BindingAdressFlag)
-                        {
-                            FExcStr = "НА ПОЛКУ! Отсканируйте адрес!"; // по умолчинию так ставим, а ниже условия которые могут этот текст поменять
-
-                            if (!Item.ZonaHand.Selected && !BindingAdress.AdressZone.Selected)
-                            {
-                                FExcStr = "НА ПОЛКУ! Отсканируйте адрес: " + AcceptedItem.BindingAdressName;
-                            }
-                            else if (Item.ZonaHand.Selected && BindingAdress.AdressZone.Selected)
-                            {
-                                if (Item.ZonaHand.ID == BindingAdress.AdressZone.ID)
-                                {
-                                    FExcStr = "НА ПОЛКУ! Отсканируйте адрес: " + AcceptedItem.BindingAdressName;
-                                }
-                            }
-                        }
-                        else if (AcceptedItem.ToMode == Mode.Harmonization)
-                        {
-                            //ну не пиздец ли это???
-                            FExcStr = "В ТЕЛЕЖКУ! Отсканируйте адрес!";
-                        }
-                        else
-                        {
-                            FExcStr = "НА ПОЛКУ! Отсканируйте адрес!";
-                        }
-                    }
-                    else
-                    {
-                        DR = FTransferReadyItems.Select("ID = '" + AcceptedItem.ID + "'");
-                        if (DR.Length == 0)
-                        {
-                            FExcStr = "В ТЕЛЕЖКУ!";
-                        }
-                        else
-                        {
-                            AcceptedItem.IsRepeat = true;
-                            FExcStr = "ВНИМАНИЕ! УЖЕ СЧИТАЛСЯ! (В ТЕЛЕЖКУ)";
-                        }
-                    }
-                    AcceptedItem.Count      = InPartyCount;
-                    AcceptedItem.OnShelf    = OnShelf;
-                }
-
-                FCurrentMode = Mode.AcceptedItem;
-                //begin internal command
-                DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"]    = ExtendID(Employer.ID, "Спр.Сотрудники");
-                DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход2"]    = ExtendID(ItemID, "Спр.Товары");
-                DataMapWrite["Спр.СинхронизацияДанных.ДатаВход1"]       = "OpenItem (Открыл карточку)";
-                if (!ExecCommandNoFeedback("Internal", DataMapWrite))
-                {
-                    return false;
-                }
-                //end internal command
-                return true;
-            }
-
-            AcceptedItem.ID         = CurrentRowAcceptedItem["ID"].ToString();
-            AcceptedItem.Name       = CurrentRowAcceptedItem["ItemName"].ToString();
-            AcceptedItem.InvCode    = CurrentRowAcceptedItem["InvCode"].ToString();
-            AcceptedItem.Acticle    = CurrentRowAcceptedItem["Article"].ToString();
-            AcceptedItem.Count      = (int)CurrentRowAcceptedItem["Count"];
-            AcceptedItem.Price      = (decimal)CurrentRowAcceptedItem["Price"];
-            AcceptedItem.Acceptance = true;
-            AcceptedItem.Details    = (int)CurrentRowAcceptedItem["Details"];
-            AcceptedItem.NowDetails = AcceptedItem.Details;
-            AcceptedItem.ToMode     = Mode.Acceptance;
-            AcceptedItem.BindingAdressFlag = false;
-            AcceptedItem.SeasonGroup = (int)CurrentRowAcceptedItem["SeasonGroup"];
-            AcceptedItem.FlagFarWarehouse = (int)CurrentRowAcceptedItem["FlagFarWarehouse"];
-            AcceptedItem.StoregeSize    = (int)CurrentRowAcceptedItem["StoregeSize"];
-
-            if (FlagBarcode == 0)
-            {
-                FExcStr = AcceptedItem.InvCode.Trim() + " найден в ручную!";
-            }
-            else if (FlagBarcode == 1)
-            {
-                FExcStr = AcceptedItem.InvCode.Trim() + " найден по штрихкоду!";
-            }
-            else //FlagBarcode == 2
-            {
-                FExcStr = AcceptedItem.InvCode.Trim() + " найден по ШК МЕСТА!";
-            }
-            DataRow[] DRAI = FAcceptedItems.Select("ID = '" + ItemID + "' and IDDOC = '" + IDDoc + "'");
-            if (DRAI.Length > 0)
-            {
-                FExcStr = "ПОВТОРНАЯ приемка!!! " + FExcStr;
-            }
-            //Добавляем что принимается не все
-            if (AllCount > AcceptedItem.Count)
-            {
-                int Coef = 1;
-                DR = FUnits.Select("OKEI = '"  + OKEIPackage + "'");
-                foreach(DataRow dr in DR)
-                {
-                    Coef = (int)dr["Coef"];
-                    break;
-                }
-                FExcStr += " " + GetStrPackageCount(AcceptedItem.Count, Coef) + " из " + GetStrPackageCount(AllCount, Coef);
-            }
-            //begin internal command
-            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"]    = ExtendID(Employer.ID, "Спр.Сотрудники");
-            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход2"]    = ExtendID(ItemID, "Спр.Товары");
-            DataMapWrite["Спр.СинхронизацияДанных.ДокументВход"]    = ExtendID(IDDoc, "АдресПеремещение");
-            DataMapWrite["Спр.СинхронизацияДанных.ДатаВход1"]       = "OpenItemAccept (Открыл карточку для приемки)";
-            if (!ExecCommandNoFeedback("Internal", DataMapWrite))
-            {
-                return false;
-            }
-            //end internal command
-            FCurrentMode = Mode.AcceptedItem;
-            return true;
-        } // ToModeAcceptedItem
-       
-        private bool ToModeAcceptedItem(string ItemID, string IDDoc)
-        {
-            return ToModeAcceptedItem(ItemID, IDDoc, Mode.Acceptance);
-        }
-        private bool ToModeTransfer(StrictDoc Doc, Mode ToMode)
-        {
-            string TextQuery =
-                "DECLARE @curdate DateTime; " + 
-                "SELECT @curdate = DATEADD(DAY, 1 - DAY(curdate), curdate) FROM _1ssystem (nolock); " + 
-                "SELECT " +
-                    "DocAT.$АдресПеремещение.Товар as ID, " + 
-                    "min(Goods.descr) as ItemName, " +
-                    "min(Goods.$Спр.Товары.ИнвКод ) as InvCode, " +
-                    "min(Goods.$Спр.Товары.Артикул ) as Article, " +
-                    "sum(DocAT.$АдресПеремещение.Количество ) as Count, " + 
-                    "DocAT.$АдресПеремещение.Адрес0 as Adress0, " + 
-                    "CASE WHEN round(sum(DocAT.$АдресПеремещение.Количество )/ISNULL(min(Package.Coef), 1), 0)*ISNULL(min(Package.Coef), 1) = sum(DocAT.$АдресПеремещение.Количество )" +
-                        "THEN ISNULL(min(Package.Coef), 1) ELSE 1 END as Coef, " + 
-                    "CASE WHEN round(sum(DocAT.$АдресПеремещение.Количество )/ISNULL(min(Package.Coef), 1), 0)*ISNULL(min(Package.Coef), 1) = sum(DocAT.$АдресПеремещение.Количество )" +
-                        "THEN cast(round(sum(DocAT.$АдресПеремещение.Количество )/ISNULL(min(Package.Coef), 1), 0) as int) " +
-                        "ELSE sum(DocAT.$АдресПеремещение.Количество ) END as CountPackage, " + 
-                        (ToMode == Mode.Transfer ? "CASE WHEN min(DocAT.$АдресПеремещение.ФлагОбязательногоАдреса ) = 1 THEN min(Sections.descr) ELSE NULL END as AdressName " : "min(Sections.descr) as AdressName ") +
-                "FROM " +
-                    "DT$АдресПеремещение as DocAT (nolock) " +
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                        "ON Goods.ID = DocAT.$АдресПеремещение.Товар " +
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " +
-                        "ON Sections.ID = DocAT.$АдресПеремещение.Адрес1 " +
-                    "LEFT JOIN ( " + 
-                                "SELECT " +
-                                    "Units.parentext as ItemID, " + 
-                                    "min(Units.$Спр.ЕдиницыШК.Коэффициент ) as Coef " + 
-                                "FROM " +
-                                    "$Спр.ЕдиницыШК as Units (nolock) " +
-                                "WHERE " + 
-                                    "Units.$Спр.ЕдиницыШК.ОКЕИ = :OKEIPackage " +
-                                    "and Units.ismark = 0 " +
-                                "GROUP BY " +
-                                    "Units.parentext ) as Package " +
-                        "ON Package.ItemID = Goods.ID " + 
-                "WHERE " + 
-                    "DocAT.iddoc = :Doc " + 
-                    "and not DocAT.$АдресПеремещение.Дата0 = :EmptyDate " + 
-                    "and DocAT.$АдресПеремещение.Дата1 = :EmptyDate " + 
-                "GROUP BY DocAT.$АдресПеремещение.Товар , DocAT.$АдресПеремещение.Адрес0 " + 
-                "ORDER BY min(DocAT.$АдресПеремещение.Дата0 ), min(DocAT.$АдресПеремещение.Время0 )";
-            QuerySetParam(ref TextQuery, "Doc", Doc.ID);
-            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-            QuerySetParam(ref TextQuery, "OKEIPackage", OKEIPackage);
-            QuerySetParam(ref TextQuery, "Warehouse", Doc.ToWarehouseID);
-            if (!ExecuteWithRead(TextQuery, out FTransferItems))
-            {
-                return false;
-            }
-            FTransferItems.Columns.Add("CoefView",          Type.GetType("System.String"));
-            for (int row = 0; row < FTransferItems.Rows.Count; row++)
-            {
-                FTransferItems.Rows[row]["CoefView"]    = ((int)(decimal)FTransferItems.Rows[row]["Coef"] == 1 ? "??  " : "")
-                                                            + ((int)(decimal)FTransferItems.Rows[row]["Coef"]).ToString();
-            }
-            TextQuery =
-                "SELECT " +
-                    "DocAT.$АдресПеремещение.Товар as ID, " + 
-                    "min(Goods.descr) as ItemName, " +
-                    "min(Goods.$Спр.Товары.ИнвКод ) as InvCode, " +
-                    "min(Goods.$Спр.Товары.Артикул ) as Article, " +
-                    "sum(DocAT.$АдресПеремещение.Количество ) as Count, " + 
-                    "DocAT.$АдресПеремещение.Адрес1 as Adress1, " + 
-                    "CASE WHEN round(sum(DocAT.$АдресПеремещение.Количество )/ISNULL(min(Package.Coef), 1), 0)*ISNULL(min(Package.Coef), 1) = sum(DocAT.$АдресПеремещение.Количество )" +
-                        "THEN ISNULL(min(Package.Coef), 1) ELSE 1 END as Coef, " + 
-                    "CASE WHEN round(sum(DocAT.$АдресПеремещение.Количество )/ISNULL(min(Package.Coef), 1), 0)*ISNULL(min(Package.Coef), 1) = sum(DocAT.$АдресПеремещение.Количество )" +
-                        "THEN cast(round(sum(DocAT.$АдресПеремещение.Количество )/ISNULL(min(Package.Coef), 1), 0) as int) " +
-                        "ELSE sum(DocAT.$АдресПеремещение.Количество ) END as CountPackage, " + 
-                    "min(Sections.descr) as AdressName " +
-                "FROM " + 
-                    "DT$АдресПеремещение as DocAT (nolock) " +
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                        "ON Goods.ID = DocAT.$АдресПеремещение.Товар " +
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " +
-                        "ON Sections.ID = DocAT.$АдресПеремещение.Адрес1 " +
-                    "LEFT JOIN ( " + 
-                            "SELECT " +
-                                "Units.parentext as ItemID, " + 
-                                "min(Units.$Спр.ЕдиницыШК.Коэффициент ) as Coef " + 
-                            "FROM " +
-                                "$Спр.ЕдиницыШК as Units (nolock) " +
-                            "WHERE " + 
-                                "Units.$Спр.ЕдиницыШК.ОКЕИ = :OKEIPackage " +
-                                "and Units.ismark = 0 " +
-                            "GROUP BY " +
-                                "Units.parentext ) as Package " +
-                        "ON Package.ItemID = Goods.ID " + 
-                "WHERE " + 
-                    "DocAT.iddoc = :Doc " + 
-                    "and not DocAT.$АдресПеремещение.Дата0 = :EmptyDate " + 
-                    "and not DocAT.$АдресПеремещение.Дата1 = :EmptyDate " + 
-                "GROUP BY DocAT.$АдресПеремещение.Товар , DocAT.$АдресПеремещение.Адрес1 " + 
-                "ORDER BY min(DocAT.$АдресПеремещение.Дата0 ), min(DocAT.$АдресПеремещение.Время0 )";
-            QuerySetParam(ref TextQuery, "Doc", Doc.ID);
-            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-            QuerySetParam(ref TextQuery, "OKEIPackage", OKEIPackage);
-            if (!ExecuteWithRead(TextQuery, out FTransferReadyItems))
-            {
-                return false;
-            }
-            FTransferReadyItems.Columns.Add("CoefView",          Type.GetType("System.String"));
-            for (int row = 0; row < FTransferReadyItems.Rows.Count; row++)
-            {
-                FTransferReadyItems.Rows[row]["CoefView"]   = ((int)(decimal)FTransferReadyItems.Rows[row]["Coef"] == 1 ? "??  " : "")
-                                                                + ((int)(decimal)FTransferReadyItems.Rows[row]["Coef"]).ToString();
-            }
-
-            ATDoc           = Doc;
-            CurrentLine     = -1;
-            OkRowIndex      = -1;
-            if (FPrinter.PrinterType == 1)
-            {
-                FPrinter = new RefPrinter(this); //обнуляем принтер, т.к. принтер этикеток нам не подходит
-            }
-
-            //Подтянем нужную зону для разноса
-            if (FAdressZoneTransfer == null)
-            {
-                TextQuery =
-                    "DECLARE @curdate DateTime; " +
-                    "SELECT @curdate = DATEADD(DAY, 1 - DAY(curdate), curdate) FROM _1ssystem (nolock) ; " +
-                    "SELECT TOP 1 " +
-                        "RegAC.$Рег.АдресОстаткиПоступления.Адрес as Adress1 , " +
-                        "max(Gate.ID ) as GateID , " +
-                        "max(Gate.Descr ) as GateName, " +
-                        "max(Gate.$Спр.Ворота.КоличествоСотрудников ) as CountEmployer " +
-                    "FROM " +
-                        "RG$Рег.АдресОстаткиПоступления as RegAC (nolock) " +
-                        "LEFT JOIN $Спр.ЗоныВорот as ZoneGate (nolock) " +
-                            "ON RegAC.$Рег.АдресОстаткиПоступления.Адрес = ZoneGate.$Спр.ЗоныВорот.Секция " +
-                        "LEFT JOIN $Спр.Ворота as Gate (nolock) " +
-                            "ON (ZoneGate.ParentExt = Gate.ID) " +
-                    "WHERE " +
-                        "RegAC.period = @curdate " +
-                        "and RegAC.$Рег.АдресОстаткиПоступления.ТипДействия = 2 " +
-                        "and RegAC.$Рег.АдресОстаткиПоступления.Склад = :Warehouse " +
-                        "and ((Gate.ID is NULL) OR (Gate.$Спр.Ворота.ВРазносеСотрудников < Gate.$Спр.Ворота.КоличествоСотрудников )) " +
-
-                    "GROUP BY " +
-                        "RegAC.$Рег.АдресОстаткиПоступления.Адрес " +
-                    "ORDER BY " +
-                        "CASE WHEN (max(Gate.ID ) = :EmptyRef)OR(max(Gate.ID ) is NULL) THEN 999999 ELSE max(Gate.$Спр.Ворота.Приоритет ) END , " +
-                        "sum(1) ";
-                SQL1S.QuerySetParam(ref TextQuery, "EmptyRef", SQL1S.GetVoidID());
-                SQL1S.QuerySetParam(ref TextQuery, "Warehouse", Doc.FromWarehouseID);
-                DataTable DT = new DataTable();
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                if (DT.Rows.Count == 0)
-                {
-                    return false;
-                }
-                FAdressZoneTransfer = new RefSection(this);
-                FAdressZoneTransfer.FoundID(DT.Rows[0]["Adress1"].ToString());
-                FZoneName = DT.Rows[0]["GateName"].ToString();
-                FZoneID = DT.Rows[0]["GateID"].ToString();
-
-                //теперь укажем, что мы в зоне работаем
-                TextQuery =
-                   "UPDATE $Спр.Ворота " +
-                       "SET " +
-                           "$Спр.Ворота.ВРазносеСотрудников = (SELECT TOP 1 $Спр.Ворота.ВРазносеСотрудников + 1 FROM $Спр.Ворота WHERE id = :id) " +
-                   "WHERE " +
-                       "id = :id ; ";
-
-                QuerySetParam(ref TextQuery, "id", DT.Rows[0]["GateID"].ToString());
-                if (!ExecuteWithoutRead(TextQuery))
-                {
-                    return false;
-                }
-            }
-            
-            if (!LockDoc(ATDoc.ID))
-            {
-                return false;
-            }
-           
-            FCurrentMode    = ToMode;
-            return true;
-        } // ToModeTransfer
-        private bool ToModeTransferInicialize()
-        {
-            DataTable DT;
-            string TextQuery = 
-                "SELECT " + 
-                    "journ.iddoc as IDDOC, " +
-                    "FromWarehouse.descr as FromWarehouseName, " +
-                    "FromWarehouse.id as FromWarehouse, " +
-                    "ToWarehouse.descr as ToWarehouseName, " +
-                    "ToWarehouse.id as ToWarehouse " +
-                "FROM " + 
-                    "_1sjourn as journ (nolock) " +
-                    "LEFT JOIN DH$АдресПеремещение as DocAT (nolock) " +
-                        "ON DocAT.iddoc = journ.iddoc " +
-                    "LEFT JOIN $Спр.Склады as FromWarehouse (nolock) " + 
-                        "ON FromWarehouse.id = DocAT.$АдресПеремещение.Склад " + 
-                    "LEFT JOIN $Спр.Склады as ToWarehouse (nolock) " + 
-                        "ON ToWarehouse.id = DocAT.$АдресПеремещение.СкладПолучатель " + 
-
-                "WHERE " + 
-                    "journ.date_time_iddoc < '19800101Z' " + 
-                    "and journ.$Автор = :Employer " + 
-                    "and journ.iddocdef = $АдресПеремещение " +
-                    "and DocAT.$АдресПеремещение.ТипДокумента = 2 " + 
-                    "and journ.ismark = 0 " + 
-                    "and journ.iddoc in (" +
-                        "SELECT right($Спр.СинхронизацияДанных.ДокументВход , 9) " + 
-                            "FROM $Спр.СинхронизацияДанных (nolock INDEX=VI" + GetSynh("Спр.СинхронизацияДанных.ДокументВход").Substring(2) + ")" + 
-                                " WHERE not descr = 'Internal' and $Спр.СинхронизацияДанных.ФлагРезультата in (1,2))";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count > 0)
-            {
-                //Тут сверху и снизу - два почти идентичных запроса. Один проверяет не в обработке ли документ,
-                //а второй (ниже) - подтягивает его
-                FExcStr = "Подождите, обрабатывается предыдущий документ!";
-                return false;
-            }
-            TextQuery = 
-                "SELECT " + 
-                    "journ.iddoc as IDDOC, " +
-                    "FromWarehouse.descr as FromWarehouseName, " +
-                    "FromWarehouse.id as FromWarehouse, " +
-                    "ToWarehouse.descr as ToWarehouseName, " +
-                    "ToWarehouse.id as ToWarehouse, " +
-                    "ToWarehouse.$Спр.Склады.ОдноадресныйРежим as ToWarehouseSingleAdressMode " + 
-                "FROM " + 
-                    "_1sjourn as journ (nolock) " +
-                    "LEFT JOIN DH$АдресПеремещение as DocAT (nolock) " +
-                        "ON DocAT.iddoc = journ.iddoc " +
-                    "LEFT JOIN $Спр.Склады as FromWarehouse (nolock) " + 
-                        "ON FromWarehouse.id = DocAT.$АдресПеремещение.Склад " + 
-                    "LEFT JOIN $Спр.Склады as ToWarehouse (nolock) " + 
-                        "ON ToWarehouse.id = DocAT.$АдресПеремещение.СкладПолучатель " + 
-
-                "WHERE " + 
-                    "journ.date_time_iddoc < '19800101Z' " + 
-                    "and journ.$Автор = :Employer " + 
-                    "and journ.iddocdef = $АдресПеремещение " +
-                    "and DocAT.$АдресПеремещение.ТипДокумента = 2 " + 
-                    "and journ.ismark = 0 ";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-
-            if (DT.Rows.Count != 0) //Документ есть!
-            {
-                StrictDoc Doc = new StrictDoc();
-                Doc.ID                  = DT.Rows[0]["IDDOC"].ToString();
-                Doc.FromWarehouseID     = DT.Rows[0]["FromWarehouse"].ToString();
-                Doc.FromWarehouseName   = DT.Rows[0]["FromWarehouseName"].ToString().Trim();
-                Doc.ToWarehouseID       = DT.Rows[0]["ToWarehouse"].ToString();
-                Doc.ToWarehouseName     = DT.Rows[0]["ToWarehouseName"].ToString().Trim();
-                Doc.ToWarehouseSingleAdressMode = (int)(decimal)DT.Rows[0]["ToWarehouseSingleAdressMode"] == 1 ? true : false;
-                return ToModeTransfer(Doc, Mode.Transfer);
-            }
-            
-            TextQuery =
-                "SELECT " + 
-                    "Warehouse.id as ID, " +
-                    "Warehouse.descr as Name " +
-                "FROM " + 
-                    "$Спр.Склады as Warehouse (nolock) " + 
-                "WHERE " + 
-                    "Warehouse.ismark = 0 " + 
-                    "and Warehouse.$Спр.Склады.ТипСклада = 3 " +
-                "ORDER BY " + 
-                    "Warehouse.descr";
-            if (!ExecuteWithRead(TextQuery, out FWarehousesFrom))
-            {
-                return false;
-            }
-
-            TextQuery =
-                "SELECT " + 
-                    "Warehouse.id as ID, " +
-                    "Warehouse.descr as Name " +
-                "FROM " + 
-                    "$Спр.Склады as Warehouse (nolock) " + 
-                "WHERE " + 
-                    "Warehouse.ismark = 0 " + 
-                    "and Warehouse.$Спр.Склады.ТипСклада = 0 " +
-                "ORDER BY " + 
-                    "Warehouse.descr";
-            if (!ExecuteWithRead(TextQuery, out FWarehousesTo))
-            {
-                return false;
-            }
-            
-            FCurrentMode = Mode.TransferInicialize;
-            return true;
-        } // ToModeTransferInicialize
-        private bool ToModeNewChoiseInventory()
-        {
-            DataTable DT;
-            string TextQuery = 
-                "SELECT " + 
-                    "journ.iddoc as IDDOC, " +
-                    "FromWarehouse.descr as FromWarehouseName, " +
-                    "FromWarehouse.id as FromWarehouse, " +
-                    "ToWarehouse.descr as ToWarehouseName, " +
-                    "ToWarehouse.id as ToWarehouse " +
-                "FROM " + 
-                    "_1sjourn as journ (nolock) " +
-                    "LEFT JOIN DH$АдресПеремещение as DocAT (nolock) " +
-                        "ON DocAT.iddoc = journ.iddoc " +
-                    "LEFT JOIN $Спр.Склады as FromWarehouse (nolock) " + 
-                        "ON FromWarehouse.id = DocAT.$АдресПеремещение.Склад " + 
-                    "LEFT JOIN $Спр.Склады as ToWarehouse (nolock) " + 
-                        "ON ToWarehouse.id = DocAT.$АдресПеремещение.СкладПолучатель " + 
-
-                "WHERE " + 
-                    "journ.date_time_iddoc < '19800101Z' " + 
-                    "and journ.$Автор = :Employer " + 
-                    "and journ.iddocdef = $АдресПеремещение " +
-                    "and DocAT.$АдресПеремещение.ТипДокумента = 8 " + 
-                    "and journ.ismark = 0 " + 
-                    "and journ.iddoc in (" +
-                        "SELECT right($Спр.СинхронизацияДанных.ДокументВход , 9) " + 
-                            "FROM $Спр.СинхронизацияДанных (nolock INDEX=VI" + GetSynh("Спр.СинхронизацияДанных.ДокументВход").Substring(2) + ")" + 
-                                " WHERE not descr = 'Internal' and $Спр.СинхронизацияДанных.ФлагРезультата in (1,2))";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count > 0)
-            {
-                //Тут сверху и снизу - два почти идентичных запроса. Один проверяет не в обработке ли документ,
-                //а второй (ниже) - подтягивает его
-                FExcStr = "Подождите, обрабатывается предыдущий документ!";
-                return false;
-            }
-
-            TextQuery = 
-                "SELECT " + 
-                    "journ.iddoc as IDDOC, " +
-                    "FromWarehouse.descr as FromWarehouseName, " +
-                    "FromWarehouse.id as FromWarehouse, " +
-                    "ToWarehouse.descr as ToWarehouseName, " +
-                    "ToWarehouse.id as ToWarehouse, " +
-                    "ToWarehouse.$Спр.Склады.ОдноадресныйРежим as ToWarehouseSingleAdressMode " + 
-                "FROM " + 
-                    "_1sjourn as journ (nolock) " +
-                    "LEFT JOIN DH$АдресПеремещение as DocAT (nolock) " +
-                        "ON DocAT.iddoc = journ.iddoc " +
-                    "LEFT JOIN $Спр.Склады as FromWarehouse (nolock) " + 
-                        "ON FromWarehouse.id = DocAT.$АдресПеремещение.Склад " + 
-                    "LEFT JOIN $Спр.Склады as ToWarehouse (nolock) " + 
-                        "ON ToWarehouse.id = DocAT.$АдресПеремещение.СкладПолучатель " + 
-                "WHERE " + 
-                    "journ.date_time_iddoc < '19800101Z' " + 
-                    "and journ.$Автор = :Employer " + 
-                    "and journ.iddocdef = $АдресПеремещение " +
-                    "and DocAT.$АдресПеремещение.ТипДокумента = 8 " + 
-                    "and journ.ismark = 0 " + 
-                    "and journ.iddoc not in (" +
-                        "SELECT right($Спр.СинхронизацияДанных.ДокументВход , 9) " + 
-                            "FROM $Спр.СинхронизацияДанных (nolock INDEX=VI" + GetSynh("Спр.СинхронизацияДанных.ДокументВход").Substring(2) + ")" + 
-                                " WHERE not descr = 'Internal' and $Спр.СинхронизацияДанных.ФлагРезультата in (1,2))";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count != 0) //Документ есть!
-            {
-                StrictDoc Doc = new StrictDoc();
-                Doc.ID                  = DT.Rows[0]["IDDOC"].ToString();
-                Doc.FromWarehouseID     = DT.Rows[0]["FromWarehouse"].ToString();
-                Doc.FromWarehouseName   = DT.Rows[0]["FromWarehouseName"].ToString().Trim();
-                Doc.ToWarehouseID       = DT.Rows[0]["ToWarehouse"].ToString();
-                Doc.ToWarehouseName     = DT.Rows[0]["ToWarehouseName"].ToString().Trim();
-                Doc.ToWarehouseSingleAdressMode = (int)(decimal)DT.Rows[0]["ToWarehouseSingleAdressMode"] == 1 ? true : false;
-                return ToModeTransfer(Doc, Mode.NewInventory);
-            }
-            
-            TextQuery =
-                "SELECT " + 
-                    "min(Sections.descr) as Name " + 
-                "FROM " + 
-                    "$Спр.СектораНабора as SetSections (nolock) " + 
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " + 
-                        "ON Sections.id = SetSections.$Спр.СектораНабора.Сектор  " + 
-                "WHERE " + 
-                    "SetSections.ismark = 0 " + 
-                    "and SetSections.parentext = :Employer" + 
-                "GROUP BY Sections.id " + 
-                "ORDER BY Name";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            if (!ExecuteWithRead(TextQuery, out Sections))
-            {
-                return false;
-            }
-
-            FCurrentMode = Mode.NewChoiseInventory;
-            return true;
-        }
-        private bool ToModeInventory()
-        {
-            FExcStr = null;
-            if (FInventory == null)
-            {
-                FInventory = new DataTable();
-                FInventory.Columns.Add("ID",            Type.GetType("System.String"));
-                FInventory.Columns.Add("Number",        Type.GetType("System.Int32"));
-                FInventory.Columns.Add("ItemName",      Type.GetType("System.String"));
-                FInventory.Columns.Add("InvCode",       Type.GetType("System.String"));
-                FInventory.Columns.Add("Article",       Type.GetType("System.String"));
-                FInventory.Columns.Add("ArticleOnPack", Type.GetType("System.String"));
-                FInventory.Columns.Add("Price",         Type.GetType("System.Decimal"));
-            }
-            else
-            {
-                FInventory.Rows.Clear();
-            }
-            if (ForPrint == null)
-            {
-                ForPrint = new DataTable();
-                ForPrint.Columns.Add("ID",            Type.GetType("System.String"));
-                ForPrint.Columns.Add("Number",        Type.GetType("System.Int32"));
-                ForPrint.Columns.Add("ItemName",      Type.GetType("System.String"));
-                ForPrint.Columns.Add("InvCode",       Type.GetType("System.String"));
-                ForPrint.Columns.Add("Article",       Type.GetType("System.String"));
-                ForPrint.Columns.Add("ArticleOnPack", Type.GetType("System.String"));
-                ForPrint.Columns.Add("Price",         Type.GetType("System.Decimal"));
-            }
-            else
-            {
-                //ForPrint.Rows.Clear();
-            }
-            FCurrentMode = Mode.Inventory;
-            return true;
-        } // ToModeInventory
-
+        
         public void AddToForPrint(DataRow currRow)
         {
             if (currRow != null)
@@ -2040,783 +789,8 @@ namespace WPM
             return true;
         } // PrintSampleLables
 
-        private bool ToModeChoiseInventory()
-        {
-            string TextQuery =
-                "SELECT " + 
-                    "Warehouse.id as ID, " +
-                    "Warehouse.descr as Name " +
-                "FROM " + 
-                    "$Спр.Склады as Warehouse (nolock) " + 
-                "WHERE " + 
-                    "Warehouse.ismark = 0 " + 
-                    "and Warehouse.$Спр.Склады.ТипСклада = 0 " +
-                "ORDER BY " + 
-                    "Warehouse.descr";
-            if (!ExecuteWithRead(TextQuery, out FWarehousesTo))
-            {
-                return false;
-            }
-            FCurrentMode = Mode.ChoiseInventory;
-            return true;
-        }
-        private bool ToModeSampleInventory()
-        {
-            ToModeInventory();
-            FCurrentMode = Mode.SampleInventory;
-            return true;
-        }
-        private bool ToModeSamplePut()
-        {
-            //FExcStr - несет смысл
-            string TextQuery;
-            DataTable DT;
-            if (SampleDoc == null)
-            {
-                TextQuery = 
-                    "SELECT " + 
-                        "journ.iddoc as IDDOC " +
-                    "FROM " + 
-                        "_1sjourn as journ (nolock) " +
-                        "LEFT JOIN DH$АдресПеремещение as DocAT (nolock) " +
-                            "ON DocAT.iddoc = journ.iddoc " +
-                    "WHERE " + 
-                        "journ.date_time_iddoc < '19800101Z' " + 
-                        "and journ.$Автор = :Employer " + 
-                        "and journ.iddocdef = $АдресПеремещение " +
-                        "and DocAT.$АдресПеремещение.ТипДокумента = 4 " + 
-                        "and journ.ismark = 0 ";
-                QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                if (DT.Rows.Count == 0) //Документа нет!!! Создадим его
-                {
-                    TextQuery = "BEGIN TRAN; " +
-                        "DECLARE @iddoc varchar(9); " + 
-                        "SELECT TOP 1 @iddoc=journ.iddoc FROM _1sjourn as journ (nolock)" + 
-                        "   INNER JOIN DH$АдресПеремещение as DocAT (nolock) " + 
-                                "ON DocAT.iddoc = journ.iddoc " +
-                            "WHERE " + 
-                                "DocAT.$АдресПеремещение.ТипДокумента = 0 " +
-                                "and journ.date_time_iddoc < '19800101Z' " + 
-                                "and journ.iddocdef = $АдресПеремещение " + 
-                                "and journ.$Автор = :EmptyID " +
-                                "and journ.ismark = 0; " +
-                        "UPDATE _1sjourn WITH (rowlock) " +
-                                "SET _1sjourn.$Автор = :Employer WHERE _1sjourn.iddoc = @iddoc; " +
-                        "if @@rowcount > 0 begin " +
-                            "UPDATE DH$АдресПеремещение WITH (rowlock) " +
-                            "SET $АдресПеремещение.Склад = :IDFrom, " +
-                                "$АдресПеремещение.СкладПолучатель = :EmptyID, " +
-                                "$АдресПеремещение.ТипДокумента = 4 " +
-                            "WHERE DH$АдресПеремещение .iddoc = @iddoc and DH$АдресПеремещение .$АдресПеремещение.ТипДокумента = 0; " +
-                            "if @@rowcount > 0 begin " +
-                                "COMMIT TRAN; " +
-                                "select 1 as result; " +
-                            "end else begin ROLLBACK TRAN; select 0 as result; end; " +
-                        "end else begin ROLLBACK TRAN; select 0 as result; end; ";
-                    QuerySetParam(ref TextQuery, "EmptyID", GetVoidID());
-                    QuerySetParam(ref TextQuery, "IDFrom", Const.MainWarehouse);
-                    QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-                    if (!ExecuteWithRead(TextQuery, out DT))
-                    {
-                        return false;
-                    }
-                    
-                    if ((int)DT.Rows[0]["result"] == 0)
-                    {
-                        FExcStr = "Не удалось захватить документ. Жмакните повторно!";
-                        return false;
-                    }
-                    //Рекурсивно вызовем, пусть отработает ветка else
-                    return ToModeSamplePut();
-                }
-                else
-                {
-                    //Документ есть
-                    SampleDoc = DT.Rows[0]["IDDOC"].ToString();
-                }
-            }
-
-            //Подсосем данные уже выложенных позиций
-            TextQuery =
-                "SELECT " +
-                    "DocAT.$АдресПеремещение.Товар as ID, " + 
-                    "Goods.descr as ItemName, " +
-                    "Goods.$Спр.Товары.ИнвКод as InvCode, " +
-                    "Goods.$Спр.Товары.Артикул as Article, " +
-                    "cast(DocAT.$АдресПеремещение.Количество as int) as Count, " + 
-                    "DocAT.LINENO_ as LINENO_ " + 
-                "FROM " + 
-                    "DT$АдресПеремещение as DocAT (nolock) " +
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                        "ON Goods.ID = DocAT.$АдресПеремещение.Товар " +
-                "WHERE " + 
-                    "DocAT.iddoc = :Doc " + 
-                    "and not DocAT.$АдресПеремещение.Дата0 = :EmptyDate " + 
-                    //"and not DocAT.$АдресПеремещение.Дата1 = :EmptyDate " + 
-                "ORDER BY DocAT.$АдресПеремещение.Дата0 , DocAT.$АдресПеремещение.Время0 ";
-            QuerySetParam(ref TextQuery, "Doc", SampleDoc);
-            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-            if (!ExecuteWithRead(TextQuery, out FTransferReadyItems))
-            {
-                return false;
-            }
-
-            if (SampleTransfers == null)
-            {
-                SampleTransfers = new DataTable();
-                SampleTransfers.Columns.Add("Number",      Type.GetType("System.Int32"));
-                SampleTransfers.Columns.Add("ATID",        Type.GetType("System.String"));
-                SampleTransfers.Columns.Add("DOCNO",       Type.GetType("System.String"));
-                SampleTransfers.Columns.Add("DateDoc",     Type.GetType("System.DateTime"));
-                SampleTransfers.Columns.Add("DateDocText", Type.GetType("System.String"));
-                SampleTransfers.Columns.Add("CountRow",    Type.GetType("System.Int32"));
-                SampleTransfers.Columns.Add("CountNotAcceptRow", Type.GetType("System.Int32"));
-            }
-            if (SampleTransfers.Rows.Count > 0)
-            {
-                DataRow[] DR = SampleTransfers.Select();
-                string Docs = "";
-                foreach (DataRow dr in DR)
-                {
-                    Docs += ", '" + dr["ATID"].ToString() + "'";
-                }
-                Docs = Docs.Substring(2);   //Убираем спедери запятые
-
-                //Подсосем данные регистра остатков
-                TextQuery = 
-                    "DECLARE @curdate DateTime; " + 
-                    "SELECT @curdate = DATEADD(DAY, 1 - DAY(curdate), curdate) FROM _1ssystem (nolock); " + 
-                    "SELECT " +
-                        "RegAT.$Рег.АдресОстаткиПеремещения.Товар as ID, " + 
-                        "cast(sum(RegAT.$Рег.АдресОстаткиПеремещения.Количество ) as int) as Count, " +
-                        "RegAT.$Рег.АдресОстаткиПеремещения.Док as Doc, " +
-                        "RegAT.$Рег.АдресОстаткиПеремещения.Адрес as Adress, " +
-                        "min(Goods.descr) as ItemName, " +
-                        "min(Goods.$Спр.Товары.ИнвКод ) as InvCode, " +
-                        "min(Goods.$Спр.Товары.Артикул ) as Article " +
-                    "FROM RG$Рег.АдресОстаткиПеремещения as RegAT (nolock) " + 
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " + 
-                        "ON Goods.id = RegAT.$Рег.АдресОстаткиПеремещения.Товар " + 
-                    "WHERE " + 
-                        "period = @curdate " +
-                        "and RegAT.$Рег.АдресОстаткиПеремещения.Док in (:Docs) " + 
-                        "and RegAT.$Рег.АдресОстаткиПеремещения.ТипДействия = 4 " +
-                        "and RegAT.$Рег.АдресОстаткиПеремещения.Склад = :Warehouse " +
-                    "GROUP BY " +
-                        "RegAT.$Рег.АдресОстаткиПеремещения.Товар , RegAT.$Рег.АдресОстаткиПеремещения.Док , RegAT.$Рег.АдресОстаткиПеремещения.Адрес " +
-                    "HAVING " + 
-                        "not sum(RegAT.$Рег.АдресОстаткиПеремещения.Количество ) = 0 " +
-                    "ORDER BY " + 
-                        "min(Goods.$Спр.Товары.ИнвКод )";
-                QuerySetParam(ref TextQuery, "Warehouse", Const.MainWarehouse);
-                TextQuery = TextQuery.Replace(":Docs", Docs);
-                if (!ExecuteWithRead(TextQuery, out FSampleItems))
-                {
-                    return false;
-                }
-                FSampleItems.Columns.Add("InvCodeFind",       Type.GetType("System.String"));
-                for (int row = 0; row < FSampleItems.Rows.Count; row++)
-                {
-                    FSampleItems.Rows[row]["InvCodeFind"] = Helper.SuckDigits(FSampleItems.Rows[row]["InvCode"].ToString().Trim());
-                }
-                //Расчитываем строчечки
-                DR = SampleTransfers.Select();
-                foreach (DataRow dr in DR)
-                {
-                    DataRow[] tmpDR = FSampleItems.Select("Doc = '" + dr["ATID"].ToString() + "'");
-                    dr["CountNotAcceptRow"] = tmpDR.Length;
-                }
-            }
-            if (FSampleItems == null)
-            {
-                FSampleItems = new DataTable();
-                FSampleItems.Columns.Add("ID",          Type.GetType("System.Int32"));
-                FSampleItems.Columns.Add("Count",       Type.GetType("System.String"));
-                FSampleItems.Columns.Add("Doc",         Type.GetType("System.String"));
-                FSampleItems.Columns.Add("Adress",      Type.GetType("System.String"));
-                FSampleItems.Columns.Add("ItemName",    Type.GetType("System.String"));
-                FSampleItems.Columns.Add("InvCode",     Type.GetType("System.String"));
-                FSampleItems.Columns.Add("Article",     Type.GetType("System.String"));
-            }
-            if (!LockDoc(SampleDoc))
-            {
-                return false;
-            }
-
-            FCurrentMode = Mode.SamplePut;
-            return true;
-        } //ToModeSamplePut()
-        private bool ToModeControlCollect()
-        {
-            FExcStr         = null;
-            ControlCC       = null;
-            LabelControlCC  = null;
-            GoodsCC = new DataTable();
-            GoodsCC.Columns.Add("Number",           Type.GetType("System.Int32"));
-            GoodsCC.Columns.Add("NumberInDaemond",  Type.GetType("System.Int32"));
-            GoodsCC.Columns.Add("InvCode",          Type.GetType("System.String"));
-            GoodsCC.Columns.Add("Adress",           Type.GetType("System.String"));
-            GoodsCC.Columns.Add("Count",            Type.GetType("System.Int32"));
-            GoodsCC.Columns.Add("Descr",            Type.GetType("System.String"));
-            
-            FCurrentMode = Mode.ControlCollect;
-            return true;
-        }
-        private bool ToModeHarmonizationInicialize()
-        {
-            DataTable DT;
-            string TextQuery = 
-                "SELECT " + 
-                    "journ.iddoc as IDDOC, " +
-                    "FromWarehouse.descr as FromWarehouseName, " +
-                    "FromWarehouse.id as FromWarehouse, " +
-                    "ToWarehouse.descr as ToWarehouseName, " +
-                    "ToWarehouse.id as ToWarehouse " +
-                "FROM " + 
-                    "_1sjourn as journ (nolock) " +
-                    "LEFT JOIN DH$АдресПеремещение as DocAT (nolock) " +
-                        "ON DocAT.iddoc = journ.iddoc " +
-                    "LEFT JOIN $Спр.Склады as FromWarehouse (nolock) " + 
-                        "ON FromWarehouse.id = DocAT.$АдресПеремещение.Склад " + 
-                    "LEFT JOIN $Спр.Склады as ToWarehouse (nolock) " + 
-                        "ON ToWarehouse.id = DocAT.$АдресПеремещение.СкладПолучатель " + 
-
-                "WHERE " + 
-                    "journ.date_time_iddoc < '19800101Z' " + 
-                    "and journ.$Автор = :Employer " + 
-                    "and journ.iddocdef = $АдресПеремещение " +
-                    "and DocAT.$АдресПеремещение.ТипДокумента = 16 " + 
-                    "and journ.ismark = 0 " + 
-                    "and journ.iddoc in (" +
-                        "SELECT right($Спр.СинхронизацияДанных.ДокументВход , 9) " + 
-                            "FROM $Спр.СинхронизацияДанных (nolock INDEX=VI" + GetSynh("Спр.СинхронизацияДанных.ДокументВход").Substring(2) + ")" + 
-                                " WHERE not descr = 'Internal' and $Спр.СинхронизацияДанных.ФлагРезультата in (1,2))";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count > 0)
-            {
-                //Тут сверху и снизу - два почти идентичных запроса. Один проверяет не в обработке ли документ,
-                //а второй (ниже) - подтягивает его
-                FExcStr = "Подождите, обрабатывается предыдущий документ!";
-                return false;
-            }
-            TextQuery = 
-                "SELECT " + 
-                    "journ.iddoc as IDDOC, " +
-                    "min(FromWarehouse.descr) as FromWarehouseName, " +
-                    "min(FromWarehouse.id) as FromWarehouse, " +
-                    "min(ToWarehouse.descr) as ToWarehouseName, " +
-                    "min(ToWarehouse.id) as ToWarehouse, " +
-                    "min(ToWarehouse.$Спр.Склады.ОдноадресныйРежим ) as ToWarehouseSingleAdressMode, " + 
-                    "substring(min(DocAT.$АдресПеремещение.ДокументОснование ), 5, 9) as FoundDoc, " +
-                    "ISNULL(max(DocATLines.lineno_), 0) as HaveTab " + 
-                "FROM " + 
-                    "_1sjourn as journ (nolock) " +
-                    "LEFT JOIN DH$АдресПеремещение as DocAT (nolock) " +
-                        "ON DocAT.iddoc = journ.iddoc " +
-                    "LEFT JOIN $Спр.Склады as FromWarehouse (nolock) " + 
-                        "ON FromWarehouse.id = DocAT.$АдресПеремещение.Склад " + 
-                    "LEFT JOIN $Спр.Склады as ToWarehouse (nolock) " + 
-                        "ON ToWarehouse.id = DocAT.$АдресПеремещение.СкладПолучатель " + 
-                    "LEFT JOIN DT$АдресПеремещение as DocATLines (nolock) " + 
-                        "ON DocATLines.iddoc = DocAT.iddoc " + 
-                "WHERE " + 
-                    "journ.date_time_iddoc < '19800101Z' " + 
-                    "and journ.$Автор = :Employer " + 
-                    "and journ.iddocdef = $АдресПеремещение " +
-                    "and DocAT.$АдресПеремещение.ТипДокумента = 16 " + 
-                    "and journ.ismark = 0 " +
-                 "GROUP BY journ.iddoc";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-
-            if (DT.Rows.Count != 0) //Документ есть!
-            {
-                StrictDoc Doc = new StrictDoc();
-                Doc.ID                  = DT.Rows[0]["IDDOC"].ToString();
-                Doc.FromWarehouseID     = DT.Rows[0]["FromWarehouse"].ToString();
-                Doc.FromWarehouseName   = DT.Rows[0]["FromWarehouseName"].ToString().Trim();
-                Doc.ToWarehouseID       = DT.Rows[0]["ToWarehouse"].ToString();
-                Doc.ToWarehouseName     = DT.Rows[0]["ToWarehouseName"].ToString().Trim();
-                Doc.ToWarehouseSingleAdressMode = (int)(decimal)DT.Rows[0]["ToWarehouseSingleAdressMode"] == 1 ? true : false;
-                Doc.FoundDoc            = DT.Rows[0]["FoundDoc"].ToString();
-                if ((short)DT.Rows[0]["HaveTab"] == 0)
-                {
-                    //Набор гармонизации
-                    return ToModeHarmonization(Doc);
-                }
-                else
-                {
-                    //Это выкладка гармонизации
-                    return ToModeHarmonizationPut(Doc);
-                }
-            }
-            
-            TextQuery =
-                "SELECT " + 
-                    "Warehouse.id as ID, " +
-                    "Warehouse.descr as Name " +
-                "FROM " + 
-                    "$Спр.Склады as Warehouse (nolock) " + 
-                "WHERE " + 
-                    "Warehouse.ismark = 0 " + 
-                    "and Warehouse.$Спр.Склады.ТипСклада = 0 " +
-                "ORDER BY " + 
-                    "Warehouse.descr";
-            if (!ExecuteWithRead(TextQuery, out FWarehousesFrom))
-            {
-                return false;
-            }
-
-            FCurrentMode = Mode.HarmonizationInicialize;
-            return true;
-        }
-        private bool ToModeHarmonization(StrictDoc Doc)
-        {
-            string TextQuery =
-                "SELECT " +
-                    "DocAT.$АдресПеремещение.Товар as ID, " + 
-                    "Goods.descr as ItemName, " +
-                    "Goods.$Спр.Товары.ИнвКод  as InvCode, " +
-                    "Goods.$Спр.Товары.Артикул  as Article, " +
-                    "DocAT.$АдресПеремещение.Количество  as Count, " + 
-                    "DocAT.$АдресПеремещение.Адрес0 as Adress0, " + 
-                    "CASE WHEN round(DocAT.$АдресПеремещение.Количество /ISNULL(Package.Coef, 1), 0)*ISNULL(Package.Coef, 1) = DocAT.$АдресПеремещение.Количество " +
-                        "THEN ISNULL(Package.Coef, 1) ELSE 1 END as Coef, " + 
-                    "CASE WHEN round(DocAT.$АдресПеремещение.Количество /ISNULL(Package.Coef, 1), 0)*ISNULL(Package.Coef, 1) = DocAT.$АдресПеремещение.Количество " +
-                        "THEN cast(round(DocAT.$АдресПеремещение.Количество /ISNULL(Package.Coef, 1), 0) as int) " +
-                        "ELSE DocAT.$АдресПеремещение.Количество  END as CountPackage, " + 
-                        "Sections.descr as AdressName " +
-                "FROM " +
-                    "DT$АдресПеремещение as DocAT (nolock) " +
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                        "ON Goods.ID = DocAT.$АдресПеремещение.Товар " +
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " +
-                        "ON Sections.ID = DocAT.$АдресПеремещение.Адрес1 " +
-                    "LEFT JOIN ( " + 
-                                "SELECT " +
-                                    "Units.parentext as ItemID, " + 
-                                    "min(Units.$Спр.ЕдиницыШК.Коэффициент ) as Coef " + 
-                                "FROM " +
-                                    "$Спр.ЕдиницыШК as Units (nolock) " +
-                                "WHERE " + 
-                                    "Units.$Спр.ЕдиницыШК.ОКЕИ = :OKEIPackage " +
-                                    "and Units.ismark = 0 " +
-                                "GROUP BY " +
-                                    "Units.parentext ) as Package " +
-                        "ON Package.ItemID = Goods.ID " + 
-                "WHERE " + 
-                    "DocAT.iddoc = :Doc " + 
-                    "and DocAT.$АдресПеремещение.ФлагДопроведения = 1 " +
-                "ORDER BY DocAT.$АдресПеремещение.Дата0 , DocAT.$АдресПеремещение.Время0 ";
-            QuerySetParam(ref TextQuery, "Doc", Doc.FoundDoc);
-            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-            QuerySetParam(ref TextQuery, "OKEIPackage", OKEIPackage);
-            QuerySetParam(ref TextQuery, "Warehouse", Doc.ToWarehouseID);
-            if (!ExecuteWithRead(TextQuery, out FTransferItems))
-            {
-                return false;
-            }
-            ATDoc = Doc;
-            FCurrentMode = Mode.Harmonization;
-            return true;
-        } // ToModeHarmonization
-        private bool ToModeHarmonizationPut(StrictDoc Doc)
-        {
-            string TextQuery =
-                "SELECT " +
-                    "DocAT.$АдресПеремещение.Товар as ID, " + 
-                    "DocAT.$АдресПеремещение.Адрес1 as Adress0, " + 
-                    "min(Goods.descr) as ItemName, " +
-                    "min(Goods.$Спр.Товары.ИнвКод ) as InvCode, " +
-                    "sum(DocAT.$АдресПеремещение.Количество ) as Count, " + 
-                    "min(Sections.descr) as AdressName " +
-                "FROM " +
-                    "DT$АдресПеремещение as DocAT (nolock) " +
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " +
-                        "ON Goods.ID = DocAT.$АдресПеремещение.Товар " +
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " +
-                        "ON Sections.ID = DocAT.$АдресПеремещение.Адрес1 " +
-                "WHERE " + 
-                    "DocAT.iddoc = :Doc " + 
-                    "and not DocAT.$АдресПеремещение.Дата1 = :EmptyDate " +
-                "GROUP BY DocAT.$АдресПеремещение.Товар , DocAT.$АдресПеремещение.Адрес1 " + 
-                "ORDER BY max(DocAT.$АдресПеремещение.Дата0 ), max(DocAT.$АдресПеремещение.Время0 )";
-            QuerySetParam(ref TextQuery, "Doc", Doc.ID);
-            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-            QuerySetParam(ref TextQuery, "OKEIPackage", OKEIPackage);
-            QuerySetParam(ref TextQuery, "Warehouse", Doc.ToWarehouseID);
-            if (!ExecuteWithRead(TextQuery, out FTransferItems))
-            {
-                return false;
-            }
-            ATDoc = Doc;
-            FCurrentMode = Mode.HarmonizationPut;
-            return true;
-        }
-        private bool ToModeLoadingInicialization()
-        {
-            string TextQuery =
-                "SELECT " +
-                    "PL.iddoc as iddoc " +
-                "FROM DH$ПутевойЛист as PL (nolock) " +
-                    "INNER JOIN _1sjourn as journ (nolock) " +
-                        "ON journ.iddoc = PL.iddoc " +
-                "WHERE " +
-                    "PL.$ПутевойЛист.Грузчик = :Employer " +
-                    "and not PL.$ПутевойЛист.Дата1 = :EmptyDate " +
-                    "and PL.$ПутевойЛист.Дата2 = :EmptyDate " +
-                    "and journ.ismark = 0 " +
-                "ORDER BY journ.date_time_iddoc";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-
-            if (DT.Rows.Count > 0)
-            {
-                //существует документ!
-                return ToModeLoading(DT.Rows[0]["iddoc"].ToString());
-            }
-            
-            FCurrentMode = Mode.LoadingInicialization;
-            Placer = new RefEmployer(this);
-            WayBill.ID      = null;
-            WayBill.View    = null;
-            return true;
-        }
-        private bool ToModeLoading(string iddoc)
-        {
-            //Если wayBill еще не выбран, то испавим это недоразумение
-            if (WayBill.ID != iddoc)
-            {
-                string IDDoc;
-                string DocType;
-                Dictionary <string, object> DataMap;
-                if (!GetDoc(iddoc, out IDDoc, out DocType, out DataMap, true))
-                {
-                    return false;
-                }
-                WayBill.View = DataMap["НомерДок"].ToString() + " (" + ((DateTime)DataMap["ДатаДок"]).ToString("dd.MM.yy") + ")";
-                WayBill.ID = iddoc;
-            }
-            if (!LockDoc(WayBill.ID))
-            {
-                return false;
-            }
-
-            string TextQuery = 
-                "SELECT " + 
-                    "Main.AdressCounter as AdressCounter, " +
-                    "Main.Adress as Adress, " + 
-                    "Main.Doc as Doc, " + 
-                    "Journ.docno as ProposalNumber, " + 
-                    "CAST(LEFT(journ.date_time_iddoc,8) as DateTime) as ProposalDate, " +
-                    "ISNULL(Boxes.CountBox, 0) as Boxes, " +
-                    "ISNULL(BoxesComplete.CountBox, 0) as BoxesFact, " +
-                    "Main.Number as Number " + 
-                "FROM ( " + GiveSomeOneQueryText() +
-                    ") as Main " +
-                    "LEFT JOIN (" +
-                                "SELECT " +
-                                    "Boxes.$Спр.МестаПогрузки.Док as DocID, " + 
-                                    "Count(*) as CountBox " + 
-                                "FROM $Спр.МестаПогрузки as Boxes (nolock) " +
-                                "WHERE Boxes.ismark = 0 " + 
-                                "GROUP BY Boxes.$Спр.МестаПогрузки.Док " +
-                                ") as Boxes " +
-                        "ON Boxes.DocID = Main.DocFull " + 
-                    "LEFT JOIN (" +
-                                "SELECT " +
-                                    "Boxes.$Спр.МестаПогрузки.Док as DocID, " + 
-                                    "Count(*) as CountBox " + 
-                                "FROM $Спр.МестаПогрузки as Boxes (nolock) " +
-                                "WHERE Boxes.ismark = 0 and not Boxes.$Спр.МестаПогрузки.Дата6 = :EmptyDate " + 
-                                "GROUP BY Boxes.$Спр.МестаПогрузки.Док " +
-                                ") as BoxesComplete " +
-                        "ON BoxesComplete.DocID = Main.DocFull " + 
-                    "LEFT JOIN _1sjourn as journ (nolock) " + 
-                        "ON journ.iddoc = Main.Doc " + 
-                "WHERE " +
-                    "not ISNULL(BoxesComplete.CountBox, 0) = ISNULL(Boxes.CountBox, 0) " +
-                "ORDER BY Main.AdressCounter desc " +
-                    "";
-
-            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-            QuerySetParam(ref TextQuery, "EmptyID", GetVoidID());
-            QuerySetParam(ref TextQuery, "iddoc", WayBill.ID);
-            if (!ExecuteWithRead(TextQuery, out WayBillDT))
-            {
-                return false;
-            }
-
-            //int counter = 0;
-            //DataRow[] DR = WayBillDT.Select();
-            //string Adress = "";
-            //for (int i = WayBillDT.Rows.Count - 1; i >= 0; i--)
-            //{
-            //    if (WayBillDT.Rows[i]["Adress"].ToString() != Adress)
-            //    {
-            //        counter++;
-            //        Adress = WayBillDT.Rows[i]["Adress"].ToString();
-            //    }
-            //    WayBillDT.Rows[i]["AdressCounter"] = counter;
-            //}
-
-            //foreach(DataRow dr in DR)
-            //{
-            //    if ((int)dr["Boxes"] == (int)dr["BoxesFact"])
-            //    {
-            //        dr.Delete();
-            //    }
-            //}
-            
-            CurrentLine = 0;
-            FCurrentMode = Mode.Loading;
-            return true;
-        }
-        public bool ToModeChoiseDown()
-        {
-            LastGoodAdress = null;
-            Const.Refresh();
-            Employer.Refresh();     // проверим не изменились ли галки на спуск/комплектацию
-            if (!Employer.CanDown  && !Employer.CanComplectation)
-            {
-                CurrentMode = Mode.ChoiseWork;         
-                FCurrentMode = CurrentMode;
-                OnChangeMode(new ChangeModeEventArgs(MM));
-                return true;
-            }
-            if (!Employer.CanDown && Employer.CanComplectation)
-            {
-                CurrentMode = Mode.ChoiseWork;
-                FCurrentMode = CurrentMode;
-                OnChangeMode(new ChangeModeEventArgs(MM));
-                return true;
-            }
-            //Сам запрос
-            string TextQuery = "select * from WPM_fn_GetChoiseDown()";
-            if (!ExecuteWithRead(TextQuery, out DownSituation))
-            {
-                return false;
-            }
-
-            DataTable DT;
-            TextQuery = "select * from dbo.WPM_fn_ComplectationInfo()";
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                PreviousAction = " < error > ";
-            }
-            else
-            {
-                PreviousAction = DT.Rows[0]["pallets"].ToString() + " п, " + DT.Rows[0]["box"].ToString() + " м, " + DT.Rows[0]["CountEmployers"].ToString() + " с";
-            }
-
-            if (DownSituation.Rows.Count == 0)
-            {
-                FExcStr = "Нет заданий к спуску...";
-            }
-            else
-            {
-                FExcStr = "Выберите сектор спуска...";
-            }
-            FCurrentMode = Mode.ChoiseDown;
-            return true;
-        }
-        public bool ToModeDown()
-        {
-
-            DocDown = new StrictDoc();
-            string TextQuery = "select * from dbo.WPM_fn_ToModeDown(:Employer)";
-            QuerySetParam(ref TextQuery, "Employer",    Employer.ID);
-            //QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-
-            if (DT.Rows.Count > 0)
-            {
-                DocDown.ID          = DT.Rows[0]["iddoc"].ToString();
-                DocDown.Boxes       = (int)DT.Rows[0]["CountBox"];
-                DocDown.View        = DT.Rows[0]["Sector"].ToString().Trim() + "-" + DT.Rows[0]["Number"].ToString() + " Заявка " + DT.Rows[0]["DocNo"].ToString() + " (" + DT.Rows[0]["DateDoc"].ToString() + ")";
-                DocDown.AdressCollect = DT.Rows[0]["AdressCollect"].ToString();
-                DocDown.Sector      = DT.Rows[0]["ParentSector"].ToString();
-                DocDown.MaxStub     = (int)DT.Rows[0]["MaxStub"];
-                DocDown.AllBoxes    = (int)DT.Rows[0]["CountAllBox"];
-                DocDown.NumberBill  = DT.Rows[0]["DocNo"].ToString().Trim();
-                DocDown.NumberCC    = (int)DT.Rows[0]["Number"];
-                DocDown.MainSectorName    = DT.Rows[0]["Sector"].ToString();
-                DocDown.SetterName  = DT.Rows[0]["SetterName"].ToString();
-                FExcStr = "Сканируйте места";
-                FCurrentMode = Mode.Down;
-                return true;
-            }
-            //Собирать - нечего,
-            return ToModeDownComplete();
-            
-        }
-        private bool ToModeDownComplete()
-        {
-            if (DownSituation != null)
-            {
-                DownSituation.Clear();
-            }
-            //В этот режим попадает только если нечего собирать по Дате4, так что если и тут нет ничего - то уходит на режим ChoiseDown
-            string TextQuery = 
-                "select " + 
-                        "min(Ref.$Спр.МестаПогрузки.НомерЗадания5 ) as NumberOfOrder, " + 
-                        "Count(*) as AllBox " +
-                    "from $Спр.МестаПогрузки as Ref (nolock) " +
-                    "where " +
-                        "Ref.ismark = 0 " +
-                        "and Ref.$Спр.МестаПогрузки.Сотрудник4 = :Employer " + 
-                        "and not Ref.$Спр.МестаПогрузки.Дата4 = :EmptyDate " +
-                        "and Ref.$Спр.МестаПогрузки.Дата5 = :EmptyDate ";
-            QuerySetParam(ref TextQuery, "Employer",    Employer.ID);
-            QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-            if (!ExecuteWithRead(TextQuery, out DownSituation))
-            {
-                return false;
-            }
-            if ((int)DownSituation.Rows[0]["AllBox"] == 0)
-            {
-                //Нету нихуя!
-                bool res = ToModeChoiseDown();
-                OnChangeMode(new ChangeModeEventArgs(FCurrentMode));
-                return res;
-            }
-            FExcStr = "Напечатать этикетку, отсканировать адрес паллеты";
-            FCurrentMode = Mode.DownComplete;
-            return true;
-        }
-        public bool ToModeFreeDownComplete()
-        {
-            DocDown = new StrictDoc();
-            string TextQuery = "select * from dbo.WPM_fn_ToModeFreeDownComplete(:Employer)";
-            QuerySetParam(ref TextQuery, "Employer",    Employer.ID);
-            //QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-            //QuerySetParam(ref TextQuery, "EmptyID",     GetVoidID());
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count > 0)
-            {
-                if (BadDoc.ID == null)
-                {
-                    LoadBadDoc(DT.Rows[0]["id"].ToString());
-                }
-
-                DocDown.ID          = DT.Rows[0]["id"].ToString();
-                DocDown.View        = DT.Rows[0]["Sector"].ToString().Trim() + "-" + DT.Rows[0]["Number"].ToString() + " Заявка " + DT.Rows[0]["DocNo"].ToString() + " (" + DT.Rows[0]["DateDoc"].ToString() + ")";
-                DocDown.NumberBill  = DT.Rows[0]["DocNo"].ToString().Trim();
-                DocDown.NumberCC    = (int)DT.Rows[0]["Number"];
-                DocDown.MainSectorName    = DT.Rows[0]["Sector"].ToString();
-                DocDown.SetterName  = DT.Rows[0]["SetterName"].ToString();
-                DocDown.Boxes       = (int)DT.Rows[0]["NumberBox"];
-                FExcStr = "Отсканируйте адрес!";
-            }
-            else
-            {
-                FExcStr = "Отсканируйте место!";
-            }
-            FCurrentMode = Mode.FreeDownComplete;
-            return true;
-        }
-        public bool ToModeNewComplectation()
-        {
-            DocDown = new StrictDoc();
-            string TextQuery = "select * from dbo.WPM_fn_ToModeNewComplectation(:Employer)";
-            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-            //QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-            //QuerySetParam(ref TextQuery, "EmptyID",     GetVoidID());
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-
-            if (DT.Rows.Count > 0)
-            {
-                if (BadDoc.ID == null)
-                {
-                    LoadBadDoc(DT.Rows[0]["RefID"].ToString());
-                }
-
-                DocDown.ID          = DT.Rows[0]["iddoc"].ToString();
-                DocDown.Boxes       = (int)DT.Rows[0]["CountBox"];
-                DocDown.View        = DT.Rows[0]["Sector"].ToString().Trim() + "-" + DT.Rows[0]["Number"].ToString() + " Заявка " + DT.Rows[0]["DocNo"].ToString() + " (" + DT.Rows[0]["DateDoc"].ToString() + ")";
-                DocDown.AdressCollect = DT.Rows[0]["AdressCollect"].ToString();
-                DocDown.Sector      = DT.Rows[0]["ParentSector"].ToString();
-                DocDown.MaxStub     = (int)DT.Rows[0]["MaxStub"];
-                DocDown.AllBoxes        = (int)DT.Rows[0]["CountAllBox"];
-                DocDown.NumberBill      = DT.Rows[0]["DocNo"].ToString().Trim();
-                DocDown.NumberCC        = (int)DT.Rows[0]["Number"];
-                DocDown.MainSectorName  = DT.Rows[0]["Sector"].ToString();
-                DocDown.SetterName      = DT.Rows[0]["SetterName"].ToString();
-                DocDown.IsFirstOrder = (int)DT.Rows[0]["FlagFirstOrder"] == 1 ? true : false;
-                FExcStr = "Сканируйте место";
-                OnChangeMode(new ChangeModeEventArgs(Mode.NewComplectation));
-                return true;
-            }
-            //Ничего нет, может есть паллета?
-            return ToModeNewComplectationComplete();
-        }
-        private bool ToModeNewComplectationComplete()
-        {
-            if (DownSituation != null)
-            {
-                DownSituation.Clear();
-            }
-            string TextQuery = 
-                "select " + 
-                        "min(Ref.$Спр.МестаПогрузки.НомерЗадания7 ) as NumberOfOrder, " + 
-                        "Count(*) as AllBox " +
-                    "from $Спр.МестаПогрузки as Ref (nolock) " +
-                    "where " +
-                        "Ref.ismark = 0 " +
-                        "and Ref.$Спр.МестаПогрузки.Сотрудник8 = :Employer " + 
-                        "and not Ref.$Спр.МестаПогрузки.Дата8 = :EmptyDate " +
-                        "and Ref.$Спр.МестаПогрузки.Дата9 = :EmptyDate ";
-            QuerySetParam(ref TextQuery, "Employer",    Employer.ID);
-            QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-            if (!ExecuteWithRead(TextQuery, out DownSituation))
-            {
-                return false;
-            }
-            if ((int)DownSituation.Rows[0]["AllBox"] == 0)
-            {
-                //Нету нихуя!
-                bool res = ToModeChoiseDown();
-                OnChangeMode(new ChangeModeEventArgs(FCurrentMode));
-                return res;
-            }
-
-            //Подсосем маршруты
-            RefreshRoute();
-
-            FExcStr = "Сканируйте коробки и адрес комплектации!";
-            ScaningBox = null;
-            FCurrentMode = Mode.NewComplectationComplete;
-            OnChangeMode(new ChangeModeEventArgs(Mode.NewComplectationComplete));
-            return true;
-        }
+       
+        
         public bool RefreshRoute()
         {
             if (CCRP != null)
@@ -2885,6 +859,16 @@ namespace WPM
             {
                 FExcStr = "Пока нельзя! Рано!";
                 return false;
+            }
+            Employer.Refresh();
+            RefSection SectorPriory = new RefSection(this);
+            if (SectorPriory.FoundID(Employer.GetAttribute("ПосланныйСектор").ToString()))
+            {
+                if (DownSituation.Rows[CurrLine - 1]["Sector"].ToString().Trim() != SectorPriory.Name.Trim())
+                {
+                    FExcStr = "Нельзя! Можно только " + SectorPriory.Name.Trim() + " сектор!";
+                    return false;
+                }
             }
             return ChoiseDownComplete(DownSituation.Rows[CurrLine - 1]["Sector"].ToString().Trim());
         }
@@ -3135,6 +1119,13 @@ namespace WPM
                 LockoutDocAccept(dr["ACID"].ToString());
             }
         }
+        private void QuitModeAcceptanceCross()
+        {
+            foreach (DataRow dr in FConsignment.Rows)
+            {
+                LockoutDocAccept(dr["ACID"].ToString());
+            }
+        }
         private bool QuitModeTransfer()
         {
             //теперь укажем, что мы в зоне работаем
@@ -3168,10 +1159,11 @@ namespace WPM
         }
         private bool QuitModeLoading()
         {
-            if (!LockoutDoc(WayBill.ID))
-            {
-                return false;
-            }
+            //временно отключено с релиза 4.47
+            //if (!LockoutDoc(WayBill.ID))
+            //{
+            //    return false;
+            //}
             return true;
         }
 
@@ -3519,6 +1511,13 @@ namespace WPM
             FFlagBarcode = 0;
             return ToModeAcceptedItem(ItemID, IDDoc);
         }
+        public bool ChoiseItemAcceptenceCross(string ItemID, string IDDoc, string OrderID)
+        {
+            FExcStr = null;
+            FFlagBarcode = 0;
+            FOrderID = OrderID;
+            return ToModeAcceptedItem(ItemID, IDDoc);
+        }
         public bool ChoiseItemInventory(string ItemID)
         {
             FExcStr = "Do not releaseed";
@@ -3568,644 +1567,7 @@ namespace WPM
             }
         }
 
-        //Reaction
-        private bool RSCAcceptance(string IDD)
-        {
-            if (IsSC(IDD, "Сотрудники"))
-            {
-                if (!ToModeChoiseWork(IDD))
-                {
-                    return false;
-                }
-                QuitModeAcceptance();
-                return true;
-            }
-            else if (IsSC(IDD, "Принтеры"))
-            {
-                if (Printer.GetAttribute("IDD").ToString() == IDD)
-                {
-                    FPrinter = new RefPrinter(this);
-                    FExcStr = "Обнулили принтер!";
-                    return true;
-                }
-                if (!Printer.FoundIDD(IDD))
-                {
-                    return false;
-                }
-                return true;
-            }
-            else if (IsSC(IDD, "Секции"))
-            {
-                if (FPalletID == "")
-                {
-                    FExcStr = "Не выбрана паллета!";
-                    return false;
-                }
-                string SectionsID;
-                GetSC(IDD, "Секции", out SectionsID);
-
-                string StrPallets = "";
-                foreach (DataRow dr in FPallets.Rows)
-                {
-                    StrPallets += ", '" + dr["ID"].ToString() + "'";
-                }
-                StrPallets = StrPallets.Substring(2);   //Убираем спедери запятые
-
-                string TextQuery =
-                            "UPDATE $Спр.ПеремещенияПаллет " +
-                            "SET " +
-                                "$Спр.ПеремещенияПаллет.Адрес0 = :ID, " +
-                                "$Спр.ПеремещенияПаллет.ФлагОперации = 2 " +
-                            "WHERE $Спр.ПеремещенияПаллет .id in (:Pallet) ";
-                TextQuery = TextQuery.Replace(":Pallet", StrPallets);
-                QuerySetParam(ref TextQuery, "ID", SectionsID);
-                QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-                QuerySetParam(ref TextQuery, "EmployerID", Employer.ID);
-                QuerySetParam(ref TextQuery, "Date", DateTime.Now);
-                QuerySetParam(ref TextQuery, "Time", APIManager.NowSecond());
-                if (!ExecuteWithoutRead(TextQuery))
-                {
-                    return false;
-                }
-                //почистим табличку паллет от греха и почистим паллеты
-                FPallets.Rows.Clear();
-                FPalletID = "";
-                FBarcodePallet = "";
-
-                return true;
-            }
-            else
-            {
-                FExcStr = "Не верный тип справочника!";
-                return false;
-            }
-        } // SCAcceptance
-        private bool RSCTransfer(string IDD)
-        {
-            if (IsSC(IDD, "Сотрудники"))
-            {
-                return ToModeChoiseWork(IDD);
-            }
-            else if (IsSC(IDD, "Принтеры"))
-            {
-                if (!Printer.FoundIDD(IDD))
-                {
-                    return false;
-                }
-                if (FPrinter.PrinterType == 1)
-                {
-                    FPrinter = new RefPrinter(this);
-                    FExcStr = "Недопустим принтер этикеток!";
-                    return false;
-                }
-                return true;
-            }
-            else if (IsSC(IDD, "Секции"))
-            {
-                FExcStr = "Не верный тип справочника!";
-                return false;
-            }
-            else
-            {
-                FExcStr = "Не верный тип справочника!";
-                return false;
-            }
-
-        }
-        private bool RSCSamplePut(string IDD)
-        {
-            if (IsSC(IDD, "Сотрудники"))
-            {
-                return ToModeChoiseWork(IDD);
-            }
-            else if (IsSC(IDD, "Принтеры"))
-            {
-                if (!Printer.FoundIDD(IDD))
-                {
-                    return false;
-                }
-                if (FPrinter.PrinterType == 1)
-                {
-                    FPrinter = new RefPrinter(this);
-                    FExcStr = "Не допустим принтер этикеток!";
-                    return false;
-                }
-                return true;
-            }
-            else
-            {
-                FExcStr = "Не верный тип справочника!";
-                return false;
-            }
-        }
-        private bool RSCAcceptanceItem(string IDD)
-        {
-            if (IsSC(IDD, "Секции"))
-            {
-                if (!AcceptedItem.OnShelf)
-                {
-                    FExcStr = "Товар добавляется в тележку по кнопке!";
-                    return false;
-                }
-                return EnterAdress(IDD);
-            }
-            else
-            {
-                FExcStr = "Не верный тип справочника!";
-                return false;
-            }
-
-        }
-        private bool RSCLoadingInicialization(string IDD)
-        {
-            if (IsSC(IDD, "Сотрудники"))
-            {
-                return Placer.FoundIDD(IDD);
-            }
-            else
-            {
-                FExcStr = "Не верный тип справочника!";
-                return false;
-            }
-            //return true;
-        }
-        private bool RSCLoading(string ID)
-        {
-            //FExcStr - несет смысл
-            if (IsSC(ID, "Сотрудники"))
-            {
-                LockoutDoc(WayBill.ID);
-                return ToModeChoiseWork(ID);
-            }
-            string TextQuery =
-                "Select " +
-                    "$Спр.МестаПогрузки.Дата6 as Date, " +
-                    "right($Спр.МестаПогрузки.Док , 9) as Doc " +
-                "from $Спр.МестаПогрузки (nolock) where id = :id";
-            QuerySetParam(ref TextQuery, "id", ID);
-            QuerySetParam(ref TextQuery, "EmptyID", GetVoidID());
-
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count == 0)
-            {
-                FExcStr = "Нет действий с данным штрихкодом в этом режиме!";
-                return false;
-            }
-            if ((DateTime)DT.Rows[0]["Date"] != GetVoidDate())
-            {
-                FExcStr = "Ошибка! Место уже погружено!";
-                return false;
-            }
-
-            //Тут какая-то неведомая ошибка возникает, не знаю в чем дело засунул в попытку
-            DataRow[] DR;
-            try
-            {
-                DR = WayBillDT.Select("Doc = '" + DT.Rows[0]["Doc"].ToString() + "'");
-            }
-            catch
-            {
-                FExcStr = "Неведомая ошибка! Шайтан!";
-                return false;
-            }
-            if (DR.Length == 0)
-            {
-                FExcStr = "Не числится в данном путевом!";
-                return false;
-            }
-
-            if (Const.OrderControl)
-            {
-                string currCounter = DR[0]["AdressCounter"].ToString();
-                DataRow[] tmpDR = WayBillDT.Select("AdressCounter > " + currCounter);
-                if (tmpDR.Length > 0)
-                {
-                    tmpDR = WayBillDT.Select("AdressCounter = " + currCounter);
-                    if (tmpDR.Length != WayBillDT.Rows.Count)
-                    {
-                        FExcStr = "Нарушена последовательность погрузки!";
-                        return false;
-                    }
-                }
-            }
-
-            TextQuery = 
-                "UPDATE $Спр.МестаПогрузки " + 
-                    "SET " +
-                        "$Спр.МестаПогрузки.Дата6 = :Date, " +
-                        "$Спр.МестаПогрузки.Время6 = :Time " +
-                "WHERE " +
-                    "$Спр.МестаПогрузки .id = :id";
-
-            QuerySetParam(ref TextQuery, "Date", DateTime.Now);
-            QuerySetParam(ref TextQuery, "Time", APIManager.NowSecond());
-            QuerySetParam(ref TextQuery, "id", ID);
-
-            if (!ExecuteWithoutRead(TextQuery))
-            {
-                return false;
-            }
-
-            int needCurrentLine = WayBillDT.Rows.IndexOf(DR[0]);
-            if (!ToModeLoading(WayBill.ID))
-            {
-                return false;
-            }
-            CurrentLine = needCurrentLine;
-
-            if (colorSwitcher)
-            {
-                FExcStr = "Погрузка МЕСТА зафиксирована";
-            }
-            else
-            {
-                FExcStr = "ПОГРУЗКА места ЗАФИКСИРОВАНА";
-            }
-            colorSwitcher = !colorSwitcher;
-            return true;
-        }
-        private bool RSCControlCollect(string IDDorID, bool thisID)
-        {
-            if (!thisID)
-            {
-                if (IsSC(IDDorID, "Сотрудники"))
-                {
-                    return ToModeChoiseWork(IDDorID);
-                }
-                else
-                {
-                    FExcStr = "Не верный тип справочника!";
-                    return false;
-                }
-            }
-            else
-            {
-                string IDD;
-                if (!GetCCForIDPlace(IDDorID, out IDD))
-                {
-                    return false;
-                }
-                return RDControlCollect(IDD);
-            }
-        }
-        private bool RSCSampleInventory(string IDD)
-        {
-            if (IsSC(IDD, "Сотрудники"))
-            {
-                return ToModeChoiseWork(IDD);
-            }
-            else if (IsSC(IDD, "Принтеры"))
-            {
-                if (!Printer.FoundIDD(IDD))
-                {
-                    return false;
-                }
-                return true;
-            }
-            else
-            {
-                FExcStr = "Нет действий с данным ШК в этом режиме!";
-                return false;
-            }
-        }
-        private bool RSCDown(string IDDorID, bool thisID)
-        {
-            if (!thisID)
-            {
-                if (IsSC(IDDorID, "Сотрудники"))
-                {
-                    return ReactionCancel();
-                }
-                else if (IsSC(IDDorID, "Принтеры"))
-                {
-                    if (!Printer.FoundIDD(IDDorID))
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        FExcStr = "Принтер выбран!";
-                        return true;
-                    }
-                }
-                else
-                {
-                    FExcStr = "Нет действий с данным штрихкодом!";
-                    return false;
-                }
-            }
-            else
-            {
-                string TextQuery =
-                "Select " +
-                    "$Спр.МестаПогрузки.Дата4 as Date, " +
-                    "$Спр.МестаПогрузки.КонтрольНабора as Doc " +
-                "from $Спр.МестаПогрузки (nolock) where id = :id";
-                QuerySetParam(ref TextQuery, "id", IDDorID);
-
-                DataTable DT;
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                if (DT.Rows.Count == 0)
-                {
-                    FExcStr = "Нет действий с данным штрихкодом!";
-                    return false;
-                }
-                if (DT.Rows[0]["Doc"].ToString() != DocDown.ID)
-                {
-                    FExcStr = "Место от другого сборочного!";
-                    return false;
-                }
-                if ((DateTime)DT.Rows[0]["Date"] != GetVoidDate())
-                {
-                    FExcStr = "Место уже отобрано!";
-                    return false;
-                }
-
-                //Лютый пиздец начинается!
-                TextQuery = 
-                    "begin tran; " + 
-                    "UPDATE $Спр.МестаПогрузки " +
-                        "SET " + 
-                            "$Спр.МестаПогрузки.Дата4 = :Date , " +
-                            "$Спр.МестаПогрузки.Время4 = :Time " + 
-                    "WHERE " +
-                        "id = :itemid; " + 
-                    "if @@rowcount = 0 rollback tran " +
-                    "else begin " +
-                        "if exists ( select top 1 id from $Спр.МестаПогрузки as Ref " + 
-                            "where " + 
-                                "Ref.ismark = 0 " +
-                                "and Ref.$Спр.МестаПогрузки.КонтрольНабора = :iddoc " + 
-                                "and Ref.$Спр.МестаПогрузки.Дата4 = :EmptyDate ) " +
-                            "commit tran " + 
-                        "else begin " +
-                            "declare @res int; " +
-                            "exec WPM_GetOrderDown :Employer, :NameParent, @res OUTPUT; " +
-                            "if @res = 0 rollback tran else commit tran " +
-                        "end " + 
-                    "end ";
-
-                QuerySetParam(ref TextQuery, "Employer",    Employer.ID);
-                QuerySetParam(ref TextQuery, "Date",        DateTime.Now);
-                QuerySetParam(ref TextQuery, "Time",        APIManager.NowSecond());
-                QuerySetParam(ref TextQuery, "itemid",      IDDorID);
-                QuerySetParam(ref TextQuery, "iddoc",       DocDown.ID);
-                QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-                QuerySetParam(ref TextQuery, "NameParent",  DocDown.Sector.Trim());
-
-                if (!ExecuteWithoutRead(TextQuery))
-                {
-                    return false;
-                }
-                bool res = ToModeDown();
-                OnChangeMode(new ChangeModeEventArgs(FCurrentMode));
-                return res;
-            }
-        }
-        private bool RSCChoiseDown(string IDD)
-        {
-            if (IsSC(IDD, "Сотрудники"))
-            {
-                return ToModeChoiseWork(IDD);
-            }
-            else if (IsSC(IDD, "Принтеры"))
-            {
-                if (!Printer.FoundIDD(IDD))
-                {
-                    return false;
-                }
-                else
-                {
-                    FExcStr = "Принтер выбран!";
-                    return true;
-                }
-            }
-            FExcStr = "Нет действий с данным штрихкодом!";
-            return false;
-        }
-        private bool RSCDownComplete(string IDD)
-        {
-            if (IsSC(IDD, "Сотрудники"))
-            {
-                return ReactionCancel();
-            }
-            else if (IsSC(IDD, "Принтеры"))
-            {
-                if (!Printer.FoundIDD(IDD))
-                {
-                    return false;
-                }
-                else
-                {
-                    FExcStr = "Принтер выбран!";
-                    FlagPrintPallete = false;
-                    return true;
-                }
-            }
-            else if (IsSC(IDD, "Секции"))
-            {
-                string ID;
-                if (!GetSC(IDD, "Секции", out ID))
-                {
-                    return false;
-                }
-                if ((decimal)DownSituation.Rows[0]["NumberOfOrder"] == 0)
-                {
-                    FExcStr = "Не присвоен номер задания! Напечатайте этикетку!";
-                    return false;
-                }
-                string TextQuery = 
-                    "declare @res int; exec WPM_CompletePallete :employer, :adress, @res output; ";
-                QuerySetParam(ref TextQuery, "employer",    Employer.ID);
-                QuerySetParam(ref TextQuery, "adress",    ID);
-                if (!ExecuteWithoutRead(TextQuery))
-                {
-                    return false;
-                }
-                FlagPrintPallete = false;
-                return ToModeDown();
-            }
-            FExcStr = "Не знаю что делать с этим ШК!";
-            return false;
-        }
-        private bool RSCFreeDownComplete(string IDDorID, bool thisID)
-        {
-            if (!thisID)
-            {
-                if (IsSC(IDDorID, "Сотрудники"))
-                {
-                    return ReactionCancel();
-                }
-                else if (IsSC(IDDorID, "Секции"))
-                {
-                    if (DocDown.ID == null)
-                    {
-                        FExcStr = "Отсканируйте место !!!";
-                        return false;
-                    }
-                    string AdressID;
-                    if (!GetSC(IDDorID, "Секции", out AdressID))
-                    {
-                        return false;
-                    }
-                    //Прописываем адрес
-                    string TextQuery = "declare @res int; exec WPM_PutInAdress :employer, :adress, @res output; select @res as result; ";
-                    QuerySetParam(ref TextQuery, "employer", Employer.ID);
-                    QuerySetParam(ref TextQuery, "adress",   AdressID);
-                    DataTable DT;
-                    if (!ExecuteWithRead(TextQuery, out DT))
-                    {
-                        return false;
-                    }
-                    if ((int)DT.Rows[0]["result"] != 1)
-                    {
-                        ToModeFreeDownComplete();
-                        return false;
-                    }
-                    bool res = ToModeFreeDownComplete();
-                    OnChangeMode(new ChangeModeEventArgs(Mode.FreeDownComplete));
-                    return res;
-                }
-                else
-                {
-                    FExcStr = "Нет действий с данным штрихкодом!";
-                    return false;
-                }
-            }
-            else
-            {
-                string TextQuery = "declare @res int; exec WPM_TakeBoxFDC :employer, :box, @res output; select @res as result;";
-                QuerySetParam(ref TextQuery, "employer", Employer.ID);
-                QuerySetParam(ref TextQuery, "box", IDDorID);
-
-                DataTable DT;
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-
-                LoadBadDoc(IDDorID);//Подсосем данные по документу для просмотра состояния
-
-                if ((int)DT.Rows[0]["result"] != 1)
-                {
-                    ToModeFreeDownComplete();
-                    return false;
-                }
-
-                bool res = ToModeFreeDownComplete();
-                OnChangeMode(new ChangeModeEventArgs(Mode.FreeDownComplete));
-                return res;
-            }
-        } // RSCFreeDownComplete
-        private bool RSCNewComplectation(string IDDorID, bool thisID)
-        {
-            if (!thisID)
-            {
-                if (IsSC(IDDorID, "Сотрудники"))
-                {
-                    return ReactionCancel();
-                }
-                else
-                {
-                    FExcStr = "Нет действий с данным штрихкодом!";
-                    return false;
-                }
-            }
-            else
-            {
-                string TextQuery =
-                "Select " +
-                    "$Спр.МестаПогрузки.Дата8 as Date, " +
-                    "$Спр.МестаПогрузки.КонтрольНабора as Doc, " +
-                    "$Спр.МестаПогрузки.Сотрудник8 as Employer " +
-                "from $Спр.МестаПогрузки (nolock) where id = :id";
-                QuerySetParam(ref TextQuery, "id", IDDorID);
-
-                DataTable DT;
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-                if (DT.Rows.Count == 0)
-                {
-                    FExcStr = "Нет действий с данным штрихкодом!";
-                    return false;
-                }
-
-                LoadBadDoc(IDDorID);//Подсосем данные по документу для просмотра состояния
-
-                if (DT.Rows[0]["Doc"].ToString() != DocDown.ID)
-                {
-                    FExcStr = "Место от другого сборочного!";
-                    return false;
-                }
-                if ((DateTime)DT.Rows[0]["Date"] != GetVoidDate())
-                {
-                    FExcStr = "Место уже отобрано!";
-                    return false;
-                }
-                if (DT.Rows[0]["Employer"].ToString() != Employer.ID)
-                {
-                    FExcStr = "Этого места нет в задании!";
-                    return false;
-                }
-
-                //Лютый пиздец начинается!
-                TextQuery = 
-                    "begin tran; " + 
-                    "UPDATE $Спр.МестаПогрузки " +
-                        "SET " + 
-                            "$Спр.МестаПогрузки.Дата8 = :Date , " +
-                            "$Спр.МестаПогрузки.Время8 = :Time " + 
-                            //"$Спр.МестаПогрузки.Адрес9 = dbo.WMP_fn_GetAdressComplete(id) " + 
-                    "WHERE " +
-                        "id = :itemid; " + 
-                    "if @@rowcount = 0 rollback tran " +
-                    "else begin " +
-                        "if exists ( " + 
-                            "select top 1 Ref.id from $Спр.МестаПогрузки as Ref " + 
-                                "inner join $Спр.Секции as SectionsCollect (nolock) " + 
-                                    "ON SectionsCollect.id = Ref.$Спр.МестаПогрузки.Адрес7 " +
-                                "inner join $Спр.Секции as RefSectionsParent (nolock) " +
-                                    "on left(SectionsCollect.descr, 2) = RefSectionsParent.descr " +
-                            "where " + 
-                                "Ref.ismark = 0 " +
-                                "and RefSectionsParent.descr = :NameParent " + 
-                                "and Ref.$Спр.МестаПогрузки.КонтрольНабора = :iddoc " + 
-                                "and Ref.$Спр.МестаПогрузки.Дата8 = :EmptyDate ) " +
-                            "commit tran " + 
-                        "else begin " +
-                            "declare @res int; " +
-                            "exec WPM_GetOrderComplectationNew :Employer, :NameParent, 0, @res OUTPUT; " +
-                            "if @res = 0 rollback tran else commit tran " +
-                        "end " + 
-                    "end ";
-
-                QuerySetParam(ref TextQuery, "Employer",    Employer.ID);
-                QuerySetParam(ref TextQuery, "Date",        DateTime.Now);
-                QuerySetParam(ref TextQuery, "Time",        APIManager.NowSecond());
-                QuerySetParam(ref TextQuery, "itemid",      IDDorID);
-                QuerySetParam(ref TextQuery, "iddoc",       DocDown.ID);
-                QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-                QuerySetParam(ref TextQuery, "NameParent",  DocDown.Sector.Trim());
-
-                if (!ExecuteWithoutRead(TextQuery))
-                {
-                    return false;
-                }
-                bool res = ToModeNewComplectation();
-                OnChangeMode(new ChangeModeEventArgs(FCurrentMode));
-                return res;
-            }
-        }//RSCNewComplectation
-
+        
         private void LoadBadDoc(string ID)
         {
             string TextQuery =
@@ -4257,158 +1619,7 @@ namespace WPM
                 BadDoc.View        = DT.Rows[0]["Sector"].ToString().Trim() + "-" + DT.Rows[0]["Number"].ToString() + " " + DT.Rows[0]["DocNo"].ToString() + " (" + DT.Rows[0]["DateDoc"].ToString() + ") мест " + DT.Rows[0]["CountBox"].ToString();
             }
         } // LoadBadDoc()
-        private bool RSCNewComplectationComplete(string IDDorID, bool thisID)
-        {
-            LastGoodAdress = null;
-            if (!thisID)
-            {
-                if (IsSC(IDDorID, "Сотрудники"))
-                {
-                    return ReactionCancel();
-                }
-                else if (IsSC(IDDorID, "Секции"))
-                {
-                    if (ScaningBox == null)
-                    {
-                        FExcStr = "Отсканируйте место!";
-                        return false;
-                    }
-                    string ID;
-                    Dictionary<string, object> DataMap;
-                    if (!GetSCData(IDDorID, "Секции", "ID,DESCR", out DataMap, false))
-                    //if (!GetSC(IDDorID, "Секции", out ID))
-                    {
-                        return false;
-                    }
-                    ID = DataMap["ID"].ToString();
-                    if (NeedAdressComplete != GetVoidID())
-                    {
-                        if (ID != NeedAdressComplete)
-                        {
-                            FExcStr = "Неверный адрес!";
-                            return false;
-                        }
-                    }
-                    string TextQuery = 
-                        "declare @res int; " + 
-                        "begin tran; " + 
-                        "exec WPM_CompleteBox :box, :adress, @res output; " + 
-                        "if @res = 0 rollback tran else commit tran; " + 
-                        "select @res as result; ";
-                    QuerySetParam(ref TextQuery, "box",     ScaningBox);
-                    QuerySetParam(ref TextQuery, "adress",  ID);
-                    DataTable DT;
-                    if (!ExecuteWithRead(TextQuery, out DT))
-                    {
-                        return false;
-                    }
-                    if ((int)DT.Rows[0]["result"] == 0)
-                    {
-                        FExcStr = "Не удалось зафиксировать комплектацию места!";
-                        return false;
-                    }
-                    LastGoodAdress = ID;
-                    NameLastGoodAdress  = DataMap["DESCR"].ToString();
-
-                    CheckFullNewComplete(ScaningBox);
-                    return ToModeNewComplectationComplete();
-                }
-                FExcStr = "Нет действий с этим вашим ШК!";
-                return false;
-            }
-            else
-            {
-                string TextQuery =
-                "Select " +
-                    "isnull(Sections.descr, 'Пу') as Sector, " +
-                    "DocCC.$КонтрольНабора.НомерЛиста as Number, " +
-                    "CONVERT(char(8), CAST(LEFT(journForBill.date_time_iddoc, 8) as datetime), 4) as DateDoc, " +
-                    "journForBill.docno as DocNo, " + 
-                    "Ref.$Спр.МестаПогрузки.Дата9 as Date, " +
-                    "Ref.$Спр.МестаПогрузки.КонтрольНабора as Doc, " +
-                    "Ref.$Спр.МестаПогрузки.Сотрудник8 as Employer, " +
-                    "isnull(dbo.WMP_fn_GetAdressComplete(Ref.id), :EmptyID ) as Adress9, " +
-                    "isnull(Adress.Descr, 'нет адреса') as Adress, " +
-                    "AllTab.CountAllBox as CountBox, " + 
-                    "Gate.descr as Gate " +
-                "from $Спр.МестаПогрузки as Ref (nolock) " +
-                    "left join $Спр.Секции as Adress (nolock) " + 
-                        "on Adress.id = dbo.WMP_fn_GetAdressComplete(Ref.id) " + 
-                    "inner join DH$КонтрольНабора as DocCC (nolock) " + 
-                        "on DocCC.iddoc = Ref.$Спр.МестаПогрузки.КонтрольНабора " + 
-                    "left join $Спр.Секции as Sections (nolock) " + 
-                        "on Sections.id = DocCC.$КонтрольНабора.Сектор " +
-                    "inner join DH$КонтрольРасходной as DocCB (nolock) " + 
-                        "on DocCB.iddoc = DocCC.$КонтрольНабора.ДокументОснование " +
-                    "inner JOIN DH$Счет as Bill (nolock) " +
-                        "on Bill.iddoc = DocCB.$КонтрольРасходной.ДокументОснование " + 
-                    "INNER JOIN _1sjourn as journForBill (nolock) " + 
-                        "on journForBill.iddoc = Bill.iddoc " + 
-                    "left join $Спр.Ворота as Gate (nolock) " +
-                        "on Gate.id = DocCB.$КонтрольРасходной.Ворота " + 
-                    "left join ( " +
-                        "select " + 
-                            "DocCC.iddoc as iddoc, " + 
-                            "count(*) as CountAllBox " + 
-                        "from $Спр.МестаПогрузки as Ref (nolock) " +
-                        "inner join DH$КонтрольНабора as DocCC (nolock) " + 
-                            "on DocCC.iddoc = Ref.$Спр.МестаПогрузки.КонтрольНабора " + 
-                        "where " +
-                            "Ref.ismark = 0 " +
-                            "and Ref.$Спр.МестаПогрузки.Сотрудник8 = :Employer " +
-                            "and Ref.$Спр.МестаПогрузки.Дата9 = :EmptyDate " +
-                            "and not Ref.$Спр.МестаПогрузки.Дата8 = :EmptyDate " +
-                        "group by DocCC.iddoc ) as AllTab " +
-                        "on AllTab.iddoc = DocCC.iddoc " +
-                    "where Ref.id = :id";
-                QuerySetParam(ref TextQuery, "id", IDDorID);
-                QuerySetParam(ref TextQuery, "EmptyID", GetVoidID());
-                QuerySetParam(ref TextQuery, "Employer", Employer.ID);
-                QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
-
-                LoadBadDoc(IDDorID);//Подсосем данные по документу для просмотра состояния
-
-                DataTable DT;
-                if (!ExecuteWithRead(TextQuery, out DT))
-                {
-                    return false;
-                }
-
-                if (DT.Rows.Count == 0)
-                {
-                    FExcStr = "Нет действий с данным штрихкодом!";
-                    return false;
-                }
-                if ((DateTime)DT.Rows[0]["Date"] != GetVoidDate())
-                {
-                    FExcStr = "Место уже скомплектовано!";
-                    return false;
-                }
-                if (DT.Rows[0]["Employer"].ToString() != Employer.ID)
-                {
-                    FExcStr = "Этого места нет в задании!";
-                    return false;
-                }
-
-                DocDown = new StrictDoc();
-                DocDown.ID          = DT.Rows[0]["Doc"].ToString();
-                DocDown.Boxes       = (int)DT.Rows[0]["CountBox"];
-                DocDown.View        = DT.Rows[0]["Sector"].ToString().Trim() + "-" + DT.Rows[0]["Number"].ToString() + " Заявка " + DT.Rows[0]["DocNo"].ToString() + " (" + DT.Rows[0]["DateDoc"].ToString() + ")";
-                DocDown.AdressCollect = DT.Rows[0]["Adress"].ToString();
-                DocDown.Sector      = DT.Rows[0]["Gate"].ToString().Trim();
-                DocDown.NumberBill  = DT.Rows[0]["DocNo"].ToString().Trim();
-                DocDown.NumberCC    = (int)(decimal)DT.Rows[0]["Number"];
-                DocDown.MainSectorName    = DT.Rows[0]["Sector"].ToString();
-
-                ScaningBox          = IDDorID;
-                ScaningBoxIddoc     = DT.Rows[0]["Doc"].ToString();
-                NeedAdressComplete  = DT.Rows[0]["Adress9"].ToString();
-                FExcStr = "Отсканируйте адрес!";
-                OnScanBox(new EventArgs());
-                return true;
-            }
-        }
-
+        
         private bool RDAcceptance(string IDD)
         {
             if (Vers != "4.44")
@@ -4473,6 +1684,66 @@ namespace WPM
 
             return ToModeAcceptance();
         }
+
+        private bool RDAcceptanceCross(string IDD)
+        {
+            DataRow[] dr = FConsignment.Select("ParentIDD = '" + IDD + "'");
+            if (dr.Length > 0)
+            {
+                FExcStr = "Документ уже включен!";
+                return false;
+            }
+            //Подсасываем данные документа
+            Dictionary<string, object> DataDocAC;
+            if (!GetDoc(IDD, out DataDocAC, false))
+            {
+                return false;
+            }
+            if (DataDocAC["IDDOCDEF"].ToString() != "АдресПоступление")
+            {
+                FExcStr = "Не верный тип документа!";
+                return false;
+            }
+            if ((bool)DataDocAC["ISMARK"])
+            {
+                FExcStr = "Документ помечен на удаление!";
+                return false;
+            }
+
+            List<string> FieldList = new List<string>();
+            FieldList.Add("ДокументОснование");
+            FieldList.Add("КоличествоСтрок");
+
+            string TextQuery =
+                "SELECT " +
+                    ":Number as Number, " +
+                    "AC.iddoc as ACID," +
+                    ":ParentIDD as ParentIDD," +
+                    "AC.$АдресПоступление.КолСтрок as CountRow," +
+                    "journ.docno as DocNo," +
+                    "CAST(LEFT(journ.date_time_iddoc, 8) as datetime) as DateDoc," +
+                    "CONVERT(char(8), CAST(LEFT(journ.date_time_iddoc,8) as datetime), 4) as DateDocText " +
+                "FROM DH$АдресПоступление as AC (nolock) " +
+                "LEFT JOIN _1sjourn as journ (nolock) " +
+                "   ON journ.iddoc = right(AC.$АдресПоступление.ДокументОснование , 9) " +
+                "WHERE AC.iddoc = :Doc ";
+            DataTable DT;
+            QuerySetParam(ref TextQuery, "Number", FConsignment.Rows.Count + 1);
+            QuerySetParam(ref TextQuery, "Doc", DataDocAC["ID"]);
+            QuerySetParam(ref TextQuery, "ParentIDD", IDD);
+            if (!ExecuteWithRead(TextQuery, out DT))
+            {
+                return false;
+            }
+            if (!LockDocAccept(DataDocAC["ID"].ToString()))
+            {
+                return false;
+            }
+            FConsignment.Merge(DT, false, MissingSchemaAction.Ignore);
+
+            return ToModeAcceptanceCross();
+        }
+        
         private bool RDSamplePut(string IDD)
         {
             string ATID;
@@ -4565,6 +1836,7 @@ namespace WPM
 
             return ToModeSamplePut();
         }
+        
         //СТАРЫЙ РЕЖИМ
         //private bool RDSampleSet(string IDD)
         //{
@@ -4641,53 +1913,7 @@ namespace WPM
         //    CCListSample.Rows.Add(newRow);
         //    return true;
         //}
-        private bool RDControlCollect(string IDD)
-        {
-            Dictionary<string, object> DataDocAC;
-            //Подсасываем данные документа
-            if (!GetDoc(IDD, out DataDocAC, false))
-            {
-                return false;
-            }
-            if (DataDocAC["IDDOCDEF"].ToString() != "КонтрольНабора")
-            {
-                FExcStr = "Не верный тип документа!";
-                return false;
-            }
-            string TextQuery = 
-                "SELECT " + 
-                    "DocCC.$КонтрольНабора.НомерЛиста as Number, " + 
-                    "Sections.descr as Section, " + 
-                    "CAST(LEFT(journ.date_time_iddoc,8) as DateTime) as DateTime, " +
-                    "journ.DOCNO as DocNumber " + 
-                "FROM DH$КонтрольНабора as DocCC (nolock) " +
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " + 
-                        "ON Sections.id = DocCC.$КонтрольНабора.Сектор " + 
-                    "LEFT JOIN DH$КонтрольРасходной as DocCB (nolock) " + 
-                        "ON DocCB.iddoc = DocCC.$КонтрольНабора.ДокументОснование " +
-                    "LEFT JOIN DH$Счет as Daemond (nolock) " + 
-                        "ON Daemond.iddoc = DocCB.$КонтрольРасходной.ДокументОснование " + 
-                    "LEFT JOIN _1sjourn as journ (nolock) " +
-                        "ON journ.iddoc = Daemond.iddoc " +
-                "WHERE " +
-                    "DocCC.iddoc = :iddoc";
-            QuerySetParam(ref TextQuery, "iddoc", DataDocAC["ID"].ToString());
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count == 0)
-            {
-                FExcStr = "Сынок! Это фантастика!";
-                return false;
-            }
-            ControlCC = DataDocAC["ID"].ToString();
-            LabelControlCC = DT.Rows[0]["DocNumber"].ToString() + " от " + ((DateTime)DT.Rows[0]["DateTime"]).ToString("dd.MM.yy") + " СЕКЦИЯ: " + DT.Rows[0]["Section"].ToString().Trim() + "-" + DT.Rows[0]["Number"].ToString();
-            FExcStr = "ВЫБРАН СБОРОЧНЫЙ ЛИСТ " + LabelControlCC;
-            GoodsCC.Rows.Clear();
-            return true;
-        }
+        
         private bool RDLoadingInicialization(string IDD)
         {
             string IDDoc;
@@ -4943,71 +2169,7 @@ namespace WPM
             }
             return false;
         }
-        private bool RBControlCollect(string Barcode)
-        {
-            string TextQuery = 
-                "SELECT " + 
-                    "Units.parentext as ItemID, " + 
-                    "Goods.$Спр.Товары.ИнвКод as InvCode, " + 
-                    "Goods.descr as Descr " + 
-                "FROM $Спр.ЕдиницыШК as Units (nolock) " +
-                    "LEFT JOIN $Спр.Товары as Goods (nolock) " + 
-                        "ON Goods.id = Units.parentext " + 
-                "WHERE Units.$Спр.ЕдиницыШК.Штрихкод = :Barcode ";
-            QuerySetParam(ref TextQuery, "Barcode", Barcode);
-            DataTable DT;
-            if (!ExecuteWithRead(TextQuery, out DT))
-            {
-                return false;
-            }
-            if (DT.Rows.Count == 0)
-            {
-                FExcStr = "С таким штрихкодом товар не найден!";
-                return false;
-            }
-            string ItemID = DT.Rows[0]["ItemID"].ToString();
-            string LabelItem = DT.Rows[0]["InvCode"].ToString().Trim() + " " + DT.Rows[0]["Descr"].ToString().Trim();
-
-            if (ControlCC == null)
-            {
-                FExcStr = "Не выбран сборочный лист!";
-                return false;
-            }
-            TextQuery = 
-                "SELECT " + 
-                    "DocCC.LineNo_ as Number, " + 
-                    "DocCC.$КонтрольНабора.СтрокаИсх as NumberInDaemond, " + 
-                    "Goods.$Спр.Товары.ИнвКод as InvCode, " + 
-                    "Sections.descr as Adress, " + 
-                    "DocCC.$КонтрольНабора.Количество as Count, " + 
-                    "Goods.Descr as Descr " + 
-                "FROM DT$КонтрольНабора as DocCC (nolock) " +
-                    "JOIN $Спр.Товары as Goods (nolock) " + 
-                        "ON Goods.Id = DocCC.$КонтрольНабора.Товар " + 
-                    "LEFT JOIN $Спр.Секции as Sections (nolock) " + 
-                        "ON Sections.id = DocCC.$КонтрольНабора.Адрес0 " + 
-                "WHERE " +
-                    "Goods.id = :ItemID " +
-                    "and DocCC.iddoc = :iddoc";
-            QuerySetParam(ref TextQuery, "ItemID", ItemID);
-            QuerySetParam(ref TextQuery, "iddoc", ControlCC);
-            
-            GoodsCC.Clear();
-            if (!ExecuteWithRead(TextQuery, out GoodsCC))
-            {
-                return false;
-            }
-            if (GoodsCC.Rows.Count == 0)
-            {
-                FExcStr = "В сборочном нет " + LabelItem;
-                return false;
-            }
-            else
-            {
-                FExcStr = LabelItem;
-                return true;
-            }
-        }
+        
         
         public bool WriteGeneratedBarcode(string ItemID)
         {
@@ -5703,6 +2865,10 @@ namespace WPM
         public bool CompleteTransferInicialize(string IDFrom, string IDIn)
         {
             FExcStr = null;
+            //заполним склад выкладки
+            WarehouseForAddressItem = new RefWarehouse(this);
+            WarehouseForAddressItem.FoundID(IDIn);
+
             string TextQuery = "BEGIN TRAN; " +
                 "DECLARE @iddoc varchar(9); " + 
                 "SELECT TOP 1 @iddoc=journ.iddoc FROM _1sjourn as journ (nolock)" + 
@@ -5753,6 +2919,528 @@ namespace WPM
             InventoryWarehouse.FoundID(ID);
             return ToModeInventory();
         }
+        public bool CompleteAcceptCross()
+        {
+            FExcStr = null;
+            string TextQuery;
+
+            int BeginCount = 0;
+
+            if (CurrentMode != Mode.AcceptedItem)
+            {
+                FExcStr = "Недопустимая команда в текущем режиме!";
+                return false;
+            }
+
+            if (CurrentRowAcceptedItem["PalletID"].ToString() == "" && PalletAcceptedItem == null)
+            {
+                //проверка на пустое значение адреса
+                FExcStr = "Не заполнена паллета заказа!";
+                return false;
+            }
+            if (PalletAcceptedItem == null)
+            {
+                //проверка на пустое значение адреса
+                FExcStr = "Отсканируйте паллету!";
+                return false;
+            }
+            if (PalletAcceptedItem.ID.ToString() != CurrentRowAcceptedItem["PalletID"].ToString() && CurrentRowAcceptedItem["PalletID"].ToString() != "")
+            {
+                //косяк, не тот адрес
+                PalletAcceptedItem = null;
+                FExcStr = "не та паллета! Надо " + CurrentRowAcceptedItem["PalletName"].ToString();
+                return false;
+            }
+           
+            if (AcceptedItem.Acceptance)
+            {
+                BeginCount = (int)CurrentRowAcceptedItem["Count"];  //Сколько в накладной изначально
+
+                if (AcceptedItem.AcceptCount > (int)CurrentRowAcceptedItem["Count"])
+                {
+                    FExcStr = "Нельзя принять по данной накладной более " + CurrentRowAcceptedItem["Count"].ToString() + " штук!";
+                    return false;
+                }
+                else if (AcceptedItem.AcceptCount == 0)
+                {
+                    FExcStr = "Нельзя принять нулевое количество!";
+                    return false;
+                }
+
+                //Теперь проверим не поменялась ли ситуация в самой накладной, пока мы курили бамбук!
+                TextQuery =
+                    "SELECT " +
+                        "ACDT.$АдресПоступление.Количество as Count " +
+                    "FROM " +
+                        "DT$АдресПоступление as ACDT (nolock) " +
+                    "WHERE " +
+                        "ACDT.iddoc = :Doc " +
+                        "and ACDT.$АдресПоступление.Товар = :Item " +
+                        "and ACDT.$АдресПоступление.Состояние0 = 0 " +
+                        "and ACDT.lineno_ = :LineNo_ ";
+                QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["IDDOC"]);
+                QuerySetParam(ref TextQuery, "Item", CurrentRowAcceptedItem["ID"]);
+                QuerySetParam(ref TextQuery, "LineNo_", CurrentRowAcceptedItem["LINENO_"]);
+
+                DataTable DTCurrState;
+                if (!ExecuteWithRead(TextQuery, out DTCurrState))
+                {
+                    return false;
+                }
+                if (DTCurrState.Rows.Count == 0)
+                {
+                    FExcStr = "Недопустимое количество! Повторите приемку позиции!";
+                    return false;
+                }
+                if ((int)(decimal)DTCurrState.Rows[0]["Count"] < AcceptedItem.AcceptCount)
+                {
+                    FExcStr = "Недопустимое количество! Повторите приемку позиции!";
+                    return false;
+                }
+                //Скорректируем начальное количество
+                BeginCount = (int)(decimal)DTCurrState.Rows[0]["Count"];
+            }
+
+            int NeedNew = 0;
+            int CoefPlace = 0;  //Коэффициент мест, по нему будет расчитывать количество этикеток
+            DataTable tmpDT = new DataTable();
+            tmpDT.Columns.Add("Coef", Type.GetType("System.Int32"));
+            tmpDT.Columns.Add("OKEI", Type.GetType("System.String"));
+            foreach (DataRow dr in FUnits.Rows)
+            {
+                if ((int)dr["Coef"] == 1 && dr["OKEI"].ToString() != OKEIUnit)
+                {
+                    FExcStr = "Коэффициент 1 может быть только у штуки! Пожалуйста исправьте...";
+                    return false;
+                }
+                if (dr["OKEI"].ToString() == OKEIPackage)
+                {
+                    CoefPlace = (int)dr["Coef"];
+                }
+                if (dr["ID"].ToString() != GetVoidID())
+                {
+                    //Имеющаяся единица
+                    if ((int)dr["Coef"] == 0)
+                    {
+                        TextQuery =
+                            "UPDATE $Спр.ЕдиницыШК " +
+                            "SET " +
+                                "ismark = 1 " +
+                            "WHERE $Спр.ЕдиницыШК .id = :ID ";
+                        QuerySetParam(ref TextQuery, "ID", dr["ID"]);
+                    }
+                    else
+                    {
+                        TextQuery =
+                            "UPDATE $Спр.ЕдиницыШК " +
+                            "SET " +
+                                "$Спр.ЕдиницыШК.Штрихкод = :Barcode, " +
+                                "$Спр.ЕдиницыШК.Коэффициент = :Coef, " +
+                                "$Спр.ЕдиницыШК.ОКЕИ = :OKEI, " +
+                                "$Спр.ЕдиницыШК.ФлагРегистрацииМОД = 1 " +
+                            "WHERE $Спр.ЕдиницыШК .id = :ID ";
+                        QuerySetParam(ref TextQuery, "Barcode", dr["Barcode"]);
+                        QuerySetParam(ref TextQuery, "Coef", dr["Coef"]);
+                        QuerySetParam(ref TextQuery, "ID", dr["ID"]);
+                        QuerySetParam(ref TextQuery, "OKEI", dr["OKEI"]);
+                    }
+                    if (!ExecuteWithoutRead(TextQuery))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    DataRow[] tmpDR = tmpDT.Select("Coef = " + dr["Coef"].ToString() + " and OKEI = '" + dr["OKEI"] + "'");
+                    if (dr["Barcode"].ToString().Trim() != "" || tmpDR.Length == 0)
+                    {
+                        NeedNew++;
+                    }
+                }
+                DataRow tmpdr = tmpDT.NewRow();
+                tmpdr["Coef"] = (int)dr["Coef"];
+                tmpdr["OKEI"] = dr["OKEI"].ToString();
+                tmpDT.Rows.Add(tmpdr);
+            }
+            tmpDT.Clear();
+
+            if (NeedNew > 0)
+            {
+                //Есть новые...
+                int CurrentRow = 0;
+                //Теперь также пишем новые
+                foreach (DataRow dr in FUnits.Rows)
+                {
+                    if ((int)dr["Coef"] == 0)
+                    {
+                        continue;
+                    }
+                    if (dr["ID"].ToString() == GetVoidID())
+                    {
+                        DataRow[] tmpDR = tmpDT.Select("Coef = " + dr["Coef"].ToString() + " and OKEI = '" + dr["OKEI"] + "'");
+                        if (!(dr["Barcode"].ToString().Trim() != "" || tmpDR.Length == 0))
+                        {
+                            continue;
+                        }
+                        if (!CreateUnit(AcceptedItem.ID, dr["OKEI"].ToString(), (int)dr["Coef"], dr["Barcode"].ToString()))
+                        {
+                            return false;
+                        }
+                        CurrentRow++;
+                    }
+                    DataRow tmpdr = tmpDT.NewRow();
+                    tmpdr["Coef"] = (int)dr["Coef"];
+                    tmpdr["OKEI"] = dr["OKEI"].ToString();
+                    tmpDT.Rows.Add(tmpdr);
+                }
+            }
+            //Запишем норму упаковки в товар
+            string PackNorm = "";
+            AddPackNorm(ref PackNorm, OKEIKit);
+            AddPackNorm(ref PackNorm, OKEIPack);
+            AddPackNorm(ref PackNorm, OKEIPackage);
+            if (PackNorm == "")
+            {
+                PackNorm = "1";
+            }
+            else
+            {
+                PackNorm = PackNorm.Substring(1);  //Отрезаем первый символ "/"
+            }
+            if (AcceptedItem.MinParty > 0)
+            {
+                PackNorm = ">" + AcceptedItem.MinParty.ToString() + "/" + PackNorm;
+            }
+            TextQuery =
+                "UPDATE $Спр.Товары " +
+                    "SET $Спр.Товары.НормаУпаковки = :PackNorm , " +
+                        "$Спр.Товары.КоличествоДеталей = :Details " +
+                "WHERE $Спр.Товары .id = :ItemID";
+            QuerySetParam(ref TextQuery, "ItemID", AcceptedItem.ID);
+            QuerySetParam(ref TextQuery, "PackNorm", PackNorm);
+            QuerySetParam(ref TextQuery, "Details", AcceptedItem.NowDetails);
+            if (!ExecuteWithoutRead(TextQuery))
+            {
+                return false;
+            }
+
+            //Если ШК с базовой единицы слетел, то поставим его назад этим чудовищным запросом
+            TextQuery =
+                "declare @idbase char(9) " +
+                "declare @idbar char(9) " +
+                "declare @barcode varchar(50) " +
+                "select @idbase = RefE.id from $Спр.Товары as RefG (nolock) " +
+                    "inner join $Спр.ЕдиницыШК as RefE (nolock) " +
+                        "on RefE.id = RefG.$Спр.Товары.БазоваяЕдиницаШК " +
+                    "where RefG.id = :ItemID and RefE.$Спр.ЕдиницыШК.Штрихкод = ''; " +
+                "if @idbase is not null begin " +
+                    "select @idbar = RefE.id, @barcode = RefE.$Спр.ЕдиницыШК.Штрихкод from $Спр.ЕдиницыШК as RefE (nolock) " +
+                        "where " +
+                            "RefE.parentext = :ItemID " +
+                            "and RefE.$Спр.ЕдиницыШК.ОКЕИ = :OKEI " +
+                            "and not RefE.$Спр.ЕдиницыШК.Штрихкод = ''; " +
+                    "if @idbar is not null begin " +
+                        "begin tran; " +
+                        "update $Спр.ЕдиницыШК " +
+                            "set $Спр.ЕдиницыШК.Штрихкод = @barcode " +
+                            "where id = @idbase; " +
+                        "if @@rowcount = 0 " +
+                            "rollback tran " +
+                        "else begin " +
+                            "update $Спр.ЕдиницыШК " +
+                                "set $Спр.ЕдиницыШК.Штрихкод = '' " +
+                                "where id = @idbar; " +
+                            "if @@rowcount = 0 " +
+                                "rollback tran " +
+                            "else " +
+                                "commit tran " +
+                        "end " +
+                    "end " +
+                "end";
+            QuerySetParam(ref TextQuery, "OKEI", OKEIUnit);
+            QuerySetParam(ref TextQuery, "ItemID", AcceptedItem.ID);
+            if (!ExecuteWithoutRead(TextQuery))
+            {
+                return false;
+            }
+            //Конец хуйни с заменой ШК у базовой единицы
+
+            Dictionary<string, object> DataMapWrite = new Dictionary<string, object>();
+            if (!AcceptedItem.Acceptance)
+            {
+                //begin internal command
+                DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"] = ExtendID(Employer.ID, "Спр.Сотрудники");
+                DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход2"] = ExtendID(AcceptedItem.ID, "Спр.Товары");
+                DataMapWrite["Спр.СинхронизацияДанных.ДатаВход1"] = "SaveItem (Сохранил единицы)";
+                if (!ExecCommandNoFeedback("Internal", DataMapWrite))
+                {
+                    return false;
+                }
+                //end internal command
+                //Это не приемка, а просто правка карточки
+                FExcStr = AcceptedItem.InvCode.Trim() + " карточка товара сохранена!";
+                if (AcceptedItem.ToMode == Mode.AcceptanceCross)
+                {
+                    if (!ToModeAcceptanceCross())
+                    {
+                        return false;
+                    }
+                    return QuitModeAcceptedItem();
+                }               
+            }
+
+            //ТЕПЕРЬ ПОЕХАЛА ЗАПИСЬ ДОКУМЕНТА
+            //Расчитаем число этикеток
+            int LabelCount;
+            if (FlagBarcode != 0)
+            {
+                LabelCount = 0;
+            }
+            else
+            {
+                LabelCount = 1;
+                //if (CoefPlace > 0 && CountAccepted >= CoefPlace)
+                //{
+                //    LabelCount = (int)CountAccepted/CoefPlace;
+                //}
+            }
+
+            //Для начала подсосем есть ли уже принятые и не напечатанные строки в накладной
+            TextQuery =
+                "SELECT " +
+                    "ACDT.LineNo_ as LineNo_, " +
+                    "ACDT.$АдресПоступление.Количество as Count, " +
+                    "ACDT.$АдресПоступление.КоличествоЭтикеток as LabelCount " +
+                "FROM " +
+                    "DT$АдресПоступление as ACDT (nolock) " +
+                "WHERE " +
+                    "ACDT.iddoc = :Doc " +
+                    "and ACDT.$АдресПоступление.Товар = :Item " +
+                    "and ACDT.$АдресПоступление.ФлагПечати = 1 " +
+                    "and ACDT.$АдресПоступление.Сотрудник0 = :Employer";
+            QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["IDDOC"]);
+            QuerySetParam(ref TextQuery, "Item", CurrentRowAcceptedItem["ID"]);
+            QuerySetParam(ref TextQuery, "Employer", Employer.ID);
+            DataTable AlreadyDT;
+            if (!ExecuteWithRead(TextQuery, out AlreadyDT))
+            {
+                return false;
+            }
+
+            int AllCountAccepted = AcceptedItem.AcceptCount;
+            if (AlreadyDT.Rows.Count == 0 && AcceptedItem.AcceptCount < BeginCount)
+            {
+                //Нуно создать новую строку
+                TextQuery =
+                    "SELECT max(DT$АдресПоступление .lineno_) + 1 as NewLineNo_ " +
+                    "FROM DT$АдресПоступление WHERE  DT$АдресПоступление .iddoc = :Doc";
+                QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["IDDOC"].ToString());
+                DataTable DT;
+                if (!ExecuteWithRead(TextQuery, out DT))
+                {
+                    return false;
+                }
+                int NewLineNo_ = (int)DT.Rows[0]["NewLineNo_"];
+
+                TextQuery =
+                    "INSERT INTO DT$АдресПоступление VALUES " +
+                    "(:Doc, :LineNo_, :Number, :Item, :Count, :EmptyID, :Coef, 1, :Employer, " +
+                    ":Adress, :Date0, :Time0, 1, :LabelCount, :UnitID, 0, 0, :EmptyID); " +
+                    "UPDATE DT$АдресПоступление " +
+                    "SET $АдресПоступление.Количество = :RemainedCount " +
+                    "WHERE DT$АдресПоступление .iddoc = :Doc and DT$АдресПоступление .lineno_ = :RemainedLineNo_";
+                QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["IDDOC"]);
+                QuerySetParam(ref TextQuery, "LineNo_", NewLineNo_);
+                QuerySetParam(ref TextQuery, "Number", CurrentRowAcceptedItem["Number"]);
+                QuerySetParam(ref TextQuery, "Item", CurrentRowAcceptedItem["ID"]);
+                QuerySetParam(ref TextQuery, "Count", AcceptedItem.AcceptCount);
+                QuerySetParam(ref TextQuery, "EmptyID", GetVoidID());
+                QuerySetParam(ref TextQuery, "Coef", 1);
+                QuerySetParam(ref TextQuery, "Employer", Employer.ID);
+                QuerySetParam(ref TextQuery, "Adress", GetVoidID());
+                QuerySetParam(ref TextQuery, "Date0", DateTime.Now);
+                QuerySetParam(ref TextQuery, "Time0", APIManager.NowSecond());
+                QuerySetParam(ref TextQuery, "LabelCount", LabelCount);
+                QuerySetParam(ref TextQuery, "UnitID", CurrentRowAcceptedItem["Unit"]);
+                QuerySetParam(ref TextQuery, "RemainedLineNo_", CurrentRowAcceptedItem["LINENO_"]);
+                QuerySetParam(ref TextQuery, "RemainedCount", BeginCount - AcceptedItem.AcceptCount);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+            }
+            else if (AlreadyDT.Rows.Count == 0 && AcceptedItem.AcceptCount >= BeginCount)
+            {
+                //Товар, будем писать в туже стоку
+                TextQuery =
+                    "UPDATE DT$АдресПоступление " +
+                    "SET " +
+                        "$АдресПоступление.Количество = :Count," +
+                        "$АдресПоступление.Сотрудник0 = :Employer," +
+                        "$АдресПоступление.Дата0 = :Date0," +
+                        "$АдресПоступление.Время0 = :Time0," +
+                        "$АдресПоступление.Состояние0 = 1," +
+                        "$АдресПоступление.КоличествоЭтикеток = :LabelCount," +
+                        "$АдресПоступление.ФлагПечати = 1 " +
+                    "WHERE " +
+                        "DT$АдресПоступление .iddoc = :Doc " +
+                        "and DT$АдресПоступление .lineno_ = :LineNo_";
+                QuerySetParam(ref TextQuery, "Count", AcceptedItem.AcceptCount);
+                QuerySetParam(ref TextQuery, "Employer", Employer.ID);
+                QuerySetParam(ref TextQuery, "Date0", DateTime.Now);
+                QuerySetParam(ref TextQuery, "Time0", APIManager.NowSecond());
+                QuerySetParam(ref TextQuery, "LabelCount", LabelCount);
+                QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["IDDOC"]);
+                QuerySetParam(ref TextQuery, "LineNo_", CurrentRowAcceptedItem["LINENO_"]);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+            }
+            else if (AlreadyDT.Rows.Count > 0 && AcceptedItem.AcceptCount < BeginCount)
+            {
+                //Уже есть строка принятого, будем писать в нее и не принятую строчку тоже оставим
+                AllCountAccepted = (int)(decimal)AlreadyDT.Rows[0]["Count"] + AcceptedItem.AcceptCount;
+                TextQuery =
+                    "UPDATE DT$АдресПоступление " +
+                    "SET " +
+                        "$АдресПоступление.Количество = :Count," +
+                        "$АдресПоступление.Дата0 = :Date0," +
+                        "$АдресПоступление.Время0 = :Time0," +
+                        "$АдресПоступление.КоличествоЭтикеток = :LabelCount " +
+                    "WHERE " +
+                        "DT$АдресПоступление .iddoc = :Doc " +
+                        "and DT$АдресПоступление .lineno_ = :LineNo_; " +
+                    "UPDATE DT$АдресПоступление " +
+                    "SET " +
+                        "$АдресПоступление.Количество = :RemainedCount " +
+                    "WHERE " +
+                        "DT$АдресПоступление .iddoc = :Doc " +
+                        "and DT$АдресПоступление .lineno_ = :RemainedLineNo_";
+                QuerySetParam(ref TextQuery, "Count", AllCountAccepted);
+                QuerySetParam(ref TextQuery, "Date0", DateTime.Now);
+                QuerySetParam(ref TextQuery, "Time0", APIManager.NowSecond());
+                QuerySetParam(ref TextQuery, "LabelCount", (int)(decimal)AlreadyDT.Rows[0]["LabelCount"]);
+                QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["IDDOC"]);
+                QuerySetParam(ref TextQuery, "LineNo_", AlreadyDT.Rows[0]["LineNo_"]);
+                QuerySetParam(ref TextQuery, "RemainedLineNo_", CurrentRowAcceptedItem["LINENO_"]);
+                QuerySetParam(ref TextQuery, "RemainedCount", BeginCount - AcceptedItem.AcceptCount);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if ((short)AlreadyDT.Rows[0]["LineNo_"] == (int)CurrentRowAcceptedItem["LINENO_"])
+                {
+                    FExcStr = "Состояние позиции изменилось! Повторите приемку!";
+                    return false;
+                }
+                //Уже есть строка принятого, будем писать в изначальную (не принятую) и вдобавок удалим принятую
+                AllCountAccepted = (int)(decimal)AlreadyDT.Rows[0]["Count"] + AcceptedItem.AcceptCount;
+                TextQuery =
+                    "UPDATE DT$АдресПоступление " +
+                    "SET " +
+                        "$АдресПоступление.Количество = :Count," +
+                        "$АдресПоступление.Сотрудник0 = :Employer," +
+                        "$АдресПоступление.Дата0 = :Date0," +
+                        "$АдресПоступление.Время0 = :Time0," +
+                        "$АдресПоступление.Состояние0 = 1," +
+                        "$АдресПоступление.КоличествоЭтикеток = :LabelCount," +
+                        "$АдресПоступление.ФлагПечати = 1 " +
+                    "WHERE " +
+                        "DT$АдресПоступление .iddoc = :Doc " +
+                        "and DT$АдресПоступление .lineno_ = :LineNo_; " +
+                    "DELETE FROM DT$АдресПоступление " +
+                    "WHERE " +
+                        "DT$АдресПоступление .lineno_ = :DeleteLineNo_ " +
+                        "and DT$АдресПоступление .iddoc = :Doc;";
+                QuerySetParam(ref TextQuery, "Count", AllCountAccepted);
+                QuerySetParam(ref TextQuery, "Employer", Employer.ID);
+                QuerySetParam(ref TextQuery, "Date0", DateTime.Now);
+                QuerySetParam(ref TextQuery, "Time0", APIManager.NowSecond());
+                QuerySetParam(ref TextQuery, "LabelCount", (int)(decimal)AlreadyDT.Rows[0]["LabelCount"]);
+                QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["IDDOC"]);
+                QuerySetParam(ref TextQuery, "LineNo_", CurrentRowAcceptedItem["LINENO_"]);
+                QuerySetParam(ref TextQuery, "DeleteLineNo_", AlreadyDT.Rows[0]["LineNo_"]);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+            }
+
+            //теперь запишем адрес в заказ на клиента если его там нет
+            if (CurrentRowAcceptedItem["OrderID"].ToString() == "На склад")
+            {
+
+            }
+            else
+            {
+                if (CurrentRowAcceptedItem["PalletID"].ToString() == "")
+                {
+                    //не указан, значить надо записать его туда
+                    TextQuery =
+                       "UPDATE DH$ЗаказНаКлиента " +
+                       "SET " +
+                           "$ЗаказНаКлиента.Паллета = :Pallet " +
+                       "WHERE " +
+                           "DH$ЗаказНаКлиента .iddoc = :Doc ";
+                    QuerySetParam(ref TextQuery, "Pallet", PalletAcceptedItem.ID);
+                    QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["OrderID"]);
+                    if (!ExecuteWithoutRead(TextQuery))
+                    {
+                        return false;
+                    }
+                    //почистим паллетки от греха
+                    FPalletID = "";
+                    FBarcodePallet = "";
+                }
+                //теперь обновим данные по принятому количеству по заказу
+                TextQuery =
+                    "UPDATE DT$ЗаказНаКлиента " +
+                    "SET " +
+                         "$ЗаказНаКлиента.Принято = $ЗаказНаКлиента.Принято + :Count " +
+                    "WHERE " +
+                        "DT$ЗаказНаКлиента .iddoc = :Doc " +
+                        "and $ЗаказНаКлиента.Товар = :Item";
+                QuerySetParam(ref TextQuery, "Item", CurrentRowAcceptedItem["ID"]);
+                QuerySetParam(ref TextQuery, "Count", AcceptedItem.AcceptCount);
+                QuerySetParam(ref TextQuery, "Doc", CurrentRowAcceptedItem["OrderID"]);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+            }
+            
+            PalletAcceptedItem = null;
+
+            //Выведем в строку состояния сколько мы приняли за этот раз
+            int tmpCoef;
+            if (!GetCoefPackage(AcceptedItem.ID, out tmpCoef))
+            {
+                tmpCoef = (int)CurrentRowAcceptedItem["Coef"];
+            }
+            FExcStr = AcceptedItem.InvCode.Trim() + " принят в количестве " +
+                        GetStrPackageCount(AcceptedItem.AcceptCount, tmpCoef);
+            //begin internal command
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"] = ExtendID(Employer.ID, "Спр.Сотрудники");
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход2"] = ExtendID(AcceptedItem.ID, "Спр.Товары");
+            DataMapWrite["Спр.СинхронизацияДанных.ДокументВход"] = ExtendID(CurrentRowAcceptedItem["IDDOC"].ToString(), "АдресПоступление");
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаВход1"] = "AcceptItem (Принял товар)";
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаВход2"] = AcceptedItem.AcceptCount;
+            if (!ExecCommandNoFeedback("Internal", DataMapWrite))
+            {
+                return false;
+            }
+            //end internal command
+            if (!ToModeAcceptanceCross())
+            {
+                return false;
+            }
+            return QuitModeAcceptedItem();
+        }
+        
         public bool PrintLabels(bool Condition)
         {
             FExcStr = null;
@@ -5806,13 +3494,97 @@ namespace WPM
                 return false;
             }
         }
+        public bool PrintLabelsCross(bool Condition)
+        {
+            FExcStr = null;
+            PalletAcceptedItem = null;
+            if (FConsignment.Rows.Count == 0)
+            {
+                FExcStr = "Не выбраны накладные для приемки!";
+                return false;
+            }
+            if (FAcceptedItems.Rows.Count == 0)
+            {
+                FExcStr = "Нет принятых товаров в текущей сессии!";
+                return false;
+            }
+            if (!Printer.Selected)
+            {
+                FExcStr = "Принтер не выбран!";
+                return false;
+            }
+            //Формируем строку с ид-шниками АдресовПоступления
+            string strACID = "";
+            for (int i = 0; i < FConsignment.Rows.Count; i++)
+            {
+                strACID += FConsignment.Rows[i]["ACID"].ToString().Trim() + ",";
+            }
+            strACID = strACID.Substring(0, strACID.Length - 1);
+
+            Dictionary<string, object> DataMapWrite = new Dictionary<string, object>();
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаВход1"] = strACID;
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаВход2"] = Condition.ToString();
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход2"] = ExtendID(Printer.ID, "Спр.Принтеры");
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"] = ExtendID(Employer.ID, "Спр.Сотрудники");
+
+            Dictionary<string, object> DataMapRead;
+            List<string> FieldList = new List<string>();
+            FieldList.Add("Спр.СинхронизацияДанных.ДатаРез1");
+            if (!ExecCommand("CompleteAcceptanceCross", DataMapWrite, FieldList, out DataMapRead))
+            {
+                return false;
+            }
+            if ((int)(decimal)DataMapRead["Спр.СинхронизацияДанных.ФлагРезультата"] == -3)
+            {
+                FExcStr = DataMapRead["Спр.СинхронизацияДанных.ДатаРез1"].ToString();
+                return false;
+            }
+            if ((int)(decimal)DataMapRead["Спр.СинхронизацияДанных.ФлагРезультата"] != 3)
+            {
+                FExcStr = "Не известный ответ робота... я озадачен...";
+                return false;
+            }
+            if (ToModeAcceptanceCross())
+            {
+                FExcStr = DataMapRead["Спр.СинхронизацияДанных.ДатаРез1"].ToString();
+                return true;
+            }
+            else
+            {
+                return false;
+            }            
+        }
         public bool ChangeLabelCount(int currRow, int LabelCount)
         {
             FExcStr = null;
-            string TextQuery =
-                "UPDATE DT$АдресПоступление " +
-                "SET $АдресПоступление.КоличествоЭтикеток = :LabelCount " + 
-                "WHERE DT$АдресПоступление .iddoc = :Doc and DT$АдресПоступление .lineno_ = :LineNo_";
+            if (CurrentMode == Mode.AcceptanceCross)
+            {
+                string TextQuery =
+                    "UPDATE DH$ЗаказНаКлиента " +
+                    "SET $ЗаказНаКлиента.КолМест = :LabelCount " +
+                    "WHERE DH$ЗаказНаКлиента .iddoc = :Doc";
+                QuerySetParam(ref TextQuery, "LabelCount", LabelCount);
+                QuerySetParam(ref TextQuery, "Doc", FAcceptedItems.Rows[currRow]["OrderID"]);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+
+                for (int row = 0; row < FAcceptedItems.Rows.Count; row++)
+                {
+                    if (FAcceptedItems.Rows[row]["OrderID"].ToString() == FAcceptedItems.Rows[currRow]["OrderID"].ToString())
+                    {
+                        FAcceptedItems.Rows[row]["BoxCount"] = LabelCount;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                string TextQuery =
+                    "UPDATE DT$АдресПоступление " +
+                    "SET $АдресПоступление.КоличествоЭтикеток = :LabelCount " +
+                    "WHERE DT$АдресПоступление .iddoc = :Doc and DT$АдресПоступление .lineno_ = :LineNo_";
                 //"UPDATE DT$АдресПоступление " +
                 //"SET $АдресПоступление.КоличествоЭтикеток = 0 " +
                 //"WHERE " + 
@@ -5820,16 +3592,17 @@ namespace WPM
                 //    " and not DT$АдресПоступление .lineno_ = :LineNo_ " + 
                 //    " and DT$АдресПоступление .$АдресПоступление.Товар = :ItemID " +
                 //    " and DT$Адреспоступление .$АдресПоступление.ФлагПечати = 1;";
-            QuerySetParam(ref TextQuery, "LabelCount", LabelCount);
-            QuerySetParam(ref TextQuery, "Doc",     FAcceptedItems.Rows[currRow]["IDDOC"]);
-            QuerySetParam(ref TextQuery, "LineNo_", FAcceptedItems.Rows[currRow]["LineNo_"]);
-            QuerySetParam(ref TextQuery, "ItemID",  FAcceptedItems.Rows[currRow]["ID"]);
-            if (!ExecuteWithoutRead(TextQuery))
-            {
-                return false;
+                QuerySetParam(ref TextQuery, "LabelCount", LabelCount);
+                QuerySetParam(ref TextQuery, "Doc", FAcceptedItems.Rows[currRow]["IDDOC"]);
+                QuerySetParam(ref TextQuery, "LineNo_", FAcceptedItems.Rows[currRow]["LineNo_"]);
+                QuerySetParam(ref TextQuery, "ItemID", FAcceptedItems.Rows[currRow]["ID"]);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+                FAcceptedItems.Rows[currRow]["LabelCount"] = LabelCount;
+                return true;
             }
-            FAcceptedItems.Rows[currRow]["LabelCount"] = LabelCount;
-            return true;
         }
         private bool EngineChangeBarcode(int Coef, string Barcode, string OKEI)
         {
@@ -6025,6 +3798,7 @@ namespace WPM
         }
         public bool ScanPalletBarcode(string strBarcode)
         {
+           
             string TextQuery = "declare @result char(9); exec WPM_GetIDNewPallet :Barcode, :Employer, @result out; select @result;";
             SQL1S.QuerySetParam(ref TextQuery, "Barcode", strBarcode);
             SQL1S.QuerySetParam(ref TextQuery, "Employer", Employer.ID);
@@ -6034,7 +3808,8 @@ namespace WPM
             if (FPalletID == SQL1S.GetVoidID())
             {
                 return false;
-            }
+            }           
+
             //запишем данные в нее
             TextQuery =
                     "UPDATE $Спр.ПеремещенияПаллет " +
@@ -6054,7 +3829,6 @@ namespace WPM
             {
                 return false;
             }
-
             DataRow[] DR = FPallets.Select("ID = '" + FPalletID + "'");
             if (DR.Length == 0)
             {
@@ -6062,10 +3836,10 @@ namespace WPM
                 DataRow tmpdr = FPallets.NewRow();
                 tmpdr["ID"] = FPalletID;
                 tmpdr["Barcode"] = strBarcode;
-                tmpdr["Name"] = strBarcode.Substring(8,4);
+                tmpdr["Name"] = strBarcode.Substring(8, 4);
                 tmpdr["AdressID"] = SQL1S.GetVoidID();
                 FPallets.Rows.Add(tmpdr);
-            }
+            }          
             return true;
 
         } // ScanPartBarcode
@@ -6118,6 +3892,10 @@ namespace WPM
                 return CheckParty(DT.Rows[0]["ID"].ToString());
             }
             else if (CurrentMode == Mode.Acceptance)
+            {
+                return ToModeAcceptedItem(DT.Rows[0]["ID"].ToString(), DT.Rows[0]["IDDOC"].ToString());
+            }
+            else if (CurrentMode == Mode.AcceptanceCross)
             {
                 return ToModeAcceptedItem(DT.Rows[0]["ID"].ToString(), DT.Rows[0]["IDDOC"].ToString());
             }
@@ -7017,6 +4795,112 @@ namespace WPM
             }
             return ToModeHarmonizationInicialize();
         }//EnterAdressHarmonizationPut
+        public bool EnterPalletAcceptanceCross(string strBarcode)
+        {
+            //сначала проверим может паллета уже есть в заказе и тогда просто проверим ШК
+            string TextQuery;
+            string ID = CurrentRowAcceptedItem["PalletID"].ToString();
+            FBarcodePallet = strBarcode;
+            DataTable DT;
+            if (ID != "" && ID != SQL1S.GetVoidID())
+            {
+                TextQuery =
+                    "SELECT " +
+                        "Pallets.ID " +
+                    "FROM " +
+                        "$Спр.ПеремещенияПаллет as Pallets (nolock) " +
+                    "WHERE " +
+                        "Pallets.$Спр.ПеремещенияПаллет.ШКПаллеты = :Barcode " +
+                        "and Pallets.ID = :Pallet";
+                SQL1S.QuerySetParam(ref TextQuery, "Pallet", ID);
+                SQL1S.QuerySetParam(ref TextQuery, "Barcode", strBarcode);
+                if (!ExecuteWithRead(TextQuery, out DT))
+                {
+                    FExcStr = "Не та паллета! Надо " + CurrentRowAcceptedItem["PalletName"].ToString();
+                    return false;
+                }
+                FPalletID = ID;
+            }
+            else
+            {
+                //нет еще паллеты, надо создавать
+                TextQuery = "declare @result char(9); exec WPM_GetIDNewPallet :Barcode, :Employer, @result out; select @result;";
+                SQL1S.QuerySetParam(ref TextQuery, "Barcode", strBarcode);
+                SQL1S.QuerySetParam(ref TextQuery, "Employer", Employer.ID);
+                FPalletID = (string)ExecuteScalar(TextQuery);
+
+                if (FPalletID == SQL1S.GetVoidID())
+                {
+                    FExcStr = "Не удалось найти паллету!";
+                    return false;
+                }
+            }
+            PalletAcceptedItem = new RefPalleteMove(this);
+            if (!PalletAcceptedItem.FoundID(FPalletID))
+            {
+                PalletAcceptedItem = null;
+                FExcStr = "Не найдена паллета!";
+                return false;
+            }
+            //проверим а нет ли заказов на ней, может это паллета другого клиента
+            TextQuery =
+                "SELECT " +
+                    "Orders.IDDOC as OrderID, " +
+                    "right(Journ.docno,5) as OrderName " +
+                "FROM " +
+                    "DH$ЗаказНаКлиента as Orders (nolock) " +
+                    "JOIN _1sjourn as Journ (nolock) " +
+                         "on Journ.IDDOC = Orders.IDDOC " +
+                "WHERE " +
+                    "Orders.$ЗаказНаКлиента.Паллета = :Pallet " +
+                    "and NOT Orders.IDDOC = :OrderID ";
+            SQL1S.QuerySetParam(ref TextQuery, "OrderID", CurrentRowAcceptedItem["OrderID"].ToString());
+            SQL1S.QuerySetParam(ref TextQuery, "Pallet", ID);
+            if (!ExecuteWithRead(TextQuery, out DT))
+            {
+                PalletAcceptedItem = null;
+                return false;
+            }
+            if (DT.Rows.Count > 0)
+            {
+                PalletAcceptedItem = null;
+                FExcStr = "Паллета уже с другим заказом " + DT.Rows[0]["OrderName"];
+                return false;
+            }
+            if (CurrentRowAcceptedItem["PalletID"].ToString() != "")
+            {
+                //сравниваем ее тогда с паллетой отсканированной
+                if (PalletAcceptedItem.ID.ToString() != CurrentRowAcceptedItem["PalletID"].ToString())
+                {
+                    //косяк, не та паллета
+                    PalletAcceptedItem = null;
+                    FExcStr = "Не та паллета! Надо " + CurrentRowAcceptedItem["PalletName"].ToString();
+                    return false;
+                }
+            }
+            //запишим данные в паллету тепреь
+            TextQuery =
+                    "UPDATE $Спр.ПеремещенияПаллет " +
+                    "SET " +
+                        "$Спр.ПеремещенияПаллет.Сотрудник1 = :EmployerID, " +
+                        "$Спр.ПеремещенияПаллет.ФлагОперации = 1, " +
+                        "$Спр.ПеремещенияПаллет.Дата10 = :Date, " +
+                        "$Спр.ПеремещенияПаллет.Время10 = :Time, " +
+                        "$Спр.ПеремещенияПаллет.ТипДвижения = 4 " +
+                    "WHERE $Спр.ПеремещенияПаллет .id = :Pallet ";
+            SQL1S.QuerySetParam(ref TextQuery, "EmptyDate", SQL1S.GetVoidDate());
+            SQL1S.QuerySetParam(ref TextQuery, "EmployerID", Employer.ID);
+            SQL1S.QuerySetParam(ref TextQuery, "Date", DateTime.Now);
+            SQL1S.QuerySetParam(ref TextQuery, "Time", APIManager.NowSecond());
+            SQL1S.QuerySetParam(ref TextQuery, "Pallet", FPalletID);
+            if (!ExecuteWithoutRead(TextQuery))
+            {
+                PalletAcceptedItem = null;
+                return false;
+            }
+            FExcStr = "Паллета " + PalletAcceptedItem.Pallete;
+            return true;
+        }
         public bool EnterAdress(string IDD)
         {
             if (AcceptedItem.ToMode == Mode.Harmonization)
@@ -7362,6 +5246,11 @@ namespace WPM
         } // DeleteRowTransferItem()
         public bool DeleteRowAcceptedItems(DataRow currRow)
         {
+            if (CurrentMode != Mode.Acceptance)
+            {
+               return DeleteRowAcceptedItemsCross(currRow);
+            }
+
             string TextQuery = 
                 "BEGIN TRAN; " +
                 "IF EXISTS(SELECT LineNo_ FROM DT$АдресПоступление as ACDT " + 
@@ -7390,8 +5279,8 @@ namespace WPM
                             "$АдресПоступление.Время0 = 0," + 
                             "$АдресПоступление.Состояние0 = 0," + 
                             "$АдресПоступление.КоличествоЭтикеток = 0," + 
-                            "$АдресПоступление.ФлагПечати = 0 " +
-                            "$АдресПоступление.Паллета = :EmptyID; " +
+                            "$АдресПоступление.ФлагПечати = 0, " +
+                            "$АдресПоступление.Паллета = :EmptyID " +
                         "WHERE " +
                             "DT$АдресПоступление .iddoc = :ACID " + 
                             "and DT$АдресПоступление .lineno_ = :lineno_ ; " + 
@@ -7407,8 +5296,122 @@ namespace WPM
             {
                 return false;
             }
-            return ToModeAcceptance();
+            if (CurrentMode != Mode.Acceptance)
+            {
+                //если это кросс докинг, то надо еще из заказа удалить
+                TextQuery =
+                "UPDATE DT$ЗаказНаКлиента " +
+                "SET " +
+                     "$ЗаказНаКлиента.Принято = $ЗаказНаКлиента.Принято - :Count " +
+                "WHERE " +
+                    "DT$ЗаказНаКлиента .iddoc = :Doc " +
+                    "and $ЗаказНаКлиента.Товар = :Item";
+                QuerySetParam(ref TextQuery, "Item", currRow["ID"]);
+                QuerySetParam(ref TextQuery, "Count", currRow["Count"]);
+                QuerySetParam(ref TextQuery, "Doc", currRow["OrderID"]);
+                if (!ExecuteWithoutRead(TextQuery))
+                {
+                    return false;
+                }
+
+                return ToModeAcceptanceCross();
+            }
+            else
+            {
+                return ToModeAcceptance();
+            }
         } // DeleteRowAcceptedItems()
+        public bool DeleteRowAcceptedItemsCross(DataRow currRow)
+        {
+            //Нуно создать новую строку
+            string TextQuery =
+                "SELECT max(DT$АдресПоступление .lineno_) + 1 as NewLineNo_ " +
+                "FROM DT$АдресПоступление WHERE  DT$АдресПоступление .iddoc = :Doc";
+            QuerySetParam(ref TextQuery, "Doc", currRow["IDDOC"].ToString());
+            DataTable DT;
+            if (!ExecuteWithRead(TextQuery, out DT))
+            {
+                return false;
+            }
+            int NewLineNo_ = (int)DT.Rows[0]["NewLineNo_"];
+
+            TextQuery =
+                "BEGIN TRAN; " +
+                "IF EXISTS(SELECT LineNo_ FROM DT$АдресПоступление as ACDT " +
+                                "WHERE ACDT.IDDOC = :ACID " +
+                                    "and ACDT.$АдресПоступление.Товар = :ItemID " +
+                                    "and ACDT.$АдресПоступление.Состояние0 = 0) " +
+                    "BEGIN " +
+                //увеличиваем количество не принятого
+                    "UPDATE DT$АдресПоступление " +
+                        "SET $АдресПоступление.Количество = $АдресПоступление.Количество + :Count " +
+                        "WHERE DT$АдресПоступление .iddoc = :ACID " +
+                            "and DT$АдресПоступление .$АдресПоступление.Товар = :ItemID " +
+                            "and DT$АдресПоступление .$АдресПоступление.Состояние0 = 0; " +
+                //уменьшаем количество принятого
+                    "UPDATE DT$АдресПоступление " +
+                        "SET $АдресПоступление.Количество = $АдресПоступление.Количество - :Count " +
+                            "WHERE DT$АдресПоступление .iddoc = :ACID " +
+                                "and DT$АдресПоступление .lineno_ = :lineno_ " +
+                //Удаляем пустые строки
+                    "DELETE FROM DT$АдресПоступление " +
+                        "WHERE DT$АдресПоступление .iddoc = :ACID " +
+                            "and $АдресПоступление.Количество = 0 " +
+                    "END ELSE BEGIN " +
+                //сначала делаем строку принятого товара внизу
+                        "INSERT INTO DT$АдресПоступление " +
+                        "SELECT DocAP.IDDOC, :NewLineNo_, :Number, " +
+                            ":ItemID, DocAP.$АдресПоступление.Количество - :Count, " +
+                            ":EmptyID, DocAP.$АдресПоступление.Коэффициент , 1, " +
+                            "DocAP.$АдресПоступление.Сотрудник0 , DocAP.$АдресПоступление.Адрес0 , DocAP.$АдресПоступление.Дата0 , " +
+                            "DocAP.$АдресПоступление.Время0 , DocAP.$АдресПоступление.ФлагПечати , DocAP.$АдресПоступление.КоличествоЭтикеток , " +
+                            "DocAP.$АдресПоступление.ЕдиницаШК , 0, 0, DocAP.$АдресПоступление.Паллета " +                            
+                        "FROM DT$АдресПоступление as DocAP " +
+                            "WHERE DocAP.IDDOC = :ACID " +
+                                "and DocAP.lineno_ = :lineno_ " +
+                //Делаем строку не принятого товара
+                        "UPDATE DT$АдресПоступление " +
+                        "SET $АдресПоступление.Количество = :Count, " +
+                            "$АдресПоступление.Сотрудник0 = :EmptyID, "+
+                            "$АдресПоступление.Состояние0 = 0, " +
+                            "$АдресПоступление.Адрес0 = :EmptyID, " +
+                            "$АдресПоступление.Дата0 = :EmptyDate, " +
+                            "$АдресПоступление.Время0 = 0, " +
+                            "$АдресПоступление.ФлагПечати = 0, " +
+                            "$АдресПоступление.КоличествоЭтикеток = 0, " +
+                            "$АдресПоступление.Паллета = :EmptyID " +
+                        "WHERE DT$АдресПоступление .iddoc = :ACID " +
+                                "and DT$АдресПоступление .lineno_ = :lineno_ " +
+                //Удаляем пустые строки
+                    "DELETE FROM DT$АдресПоступление " +
+                        "WHERE DT$АдресПоступление .iddoc = :ACID " +
+                            "and $АдресПоступление.Количество = 0 " +
+
+                    "END; " +
+                //обновляем заказ
+                    "UPDATE DT$ЗаказНаКлиента " +
+                        "SET " +
+                        "$ЗаказНаКлиента.Принято = $ЗаказНаКлиента.Принято - :Count " +
+                    "WHERE " +
+                        "DT$ЗаказНаКлиента .iddoc = :OrderID " +
+                        "and $ЗаказНаКлиента.Товар = :ItemID " +
+                "COMMIT TRAN;";
+            QuerySetParam(ref TextQuery, "ACID", currRow["IDDOC"]);
+            QuerySetParam(ref TextQuery, "Count", currRow["Count"]);
+            QuerySetParam(ref TextQuery, "ItemID", currRow["ID"]);
+            QuerySetParam(ref TextQuery, "lineno_", currRow["LINENO_"]);
+            QuerySetParam(ref TextQuery, "EmptyID", GetVoidID());
+            QuerySetParam(ref TextQuery, "NewLineNo_", NewLineNo_);
+            QuerySetParam(ref TextQuery, "VoidDate", GetVoidDate());
+            QuerySetParam(ref TextQuery, "Number", currRow["Number"]);
+            QuerySetParam(ref TextQuery, "OrderID", currRow["OrderID"]);
+            QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
+            if (!ExecuteWithoutRead(TextQuery))
+            {
+                return false;
+            }
+            return ToModeAcceptanceCross();
+        }// DeleteRowAcceptedItems()
         public bool CompleteTransfer()
         {
             FExcStr = null;
@@ -7916,8 +5919,9 @@ namespace WPM
         {
             Dictionary<string, object> DataMapWrite = new Dictionary<string, object>();
             DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход1"]    = ExtendID(Employer.ID, "Спр.Сотрудники");
+            DataMapWrite["Спр.СинхронизацияДанных.ДатаСпрВход2"]    = ExtendID(WarehouseForAddressItem.ID, "Спр.Склады");
             DataMapWrite["Спр.СинхронизацияДанных.ДатаВход1"]       = "Harmonization";
-
+            
             Dictionary<string, object> DataMapRead;
             List<string> FieldList = new List<string>();
             FieldList.Add("Спр.СинхронизацияДанных.ДатаРез1");
@@ -7938,6 +5942,13 @@ namespace WPM
             FExcStr = DataMapRead["Спр.СинхронизацияДанных.ДатаРез1"].ToString();
             FCurrentMode = Mode.ChoiseWork; //На всякий случай
             return ToModeHarmonizationInicialize();
+        }
+        public bool RequestHarmonization(string ID)
+        {
+            DataRow[] DR = WarehousesFrom.Select("ID = '" + ID + "'");
+            WarehouseForAddressItem = new RefWarehouse(this);
+            WarehouseForAddressItem.FoundID(ID);
+            return RequestHarmonization();
         }
         public bool RequestJob()
         {
@@ -8083,13 +6094,28 @@ namespace WPM
                 return false;
             }
             //Проверяем блокировку
-            if (!LockDoc(WayBill.ID))
+            //временно отключено с релиза 4.47
+            //if (!LockDoc(WayBill.ID))
+            //{
+            //    return false;
+            //}
+
+            //проверим чек погрузки
+            string TextQuery =
+            "select DocWayBill.$ПутевойЛист.ЧекПогрузка " +
+            "from DH$ПутевойЛист as DocWayBill (nolock) " +
+            "where " +
+                "DocWayBill.iddoc = :iddoc ";
+            QuerySetParam(ref TextQuery, "iddoc", WayBill.ID);
+            if (Int32.Parse(ExecuteScalar(TextQuery).ToString()) == 0)
             {
+                //погрузка не разрешена
+                FExcStr = "Погрузка запрещена!";
                 return false;
-            }
+            }          
 
             //Проверим еще раз не засрал ли путевой кто-нибудь еще
-             string TextQuery =
+             TextQuery =
                 "SELECT " +
                     "PL.iddoc as iddoc " +
                 "FROM DH$ПутевойЛист as PL (nolock) " +
@@ -8110,29 +6136,119 @@ namespace WPM
 
             if (DT.Rows.Count == 0)
             {
-                LockoutDoc(WayBill.ID);
-                FExcStr = "Этот путевой уже сцапали или он помечен на удаление!";
-                return false;
+                //временно отключено с релиза 4.47
+                //LockoutDoc(WayBill.ID);
+                //FExcStr = "Этот путевой уже сцапали или он помечен на удаление!";
+                //return false;
+
+                //уже кто-то взял поймем куда нас пихать если он еще не закрыт
+                TextQuery =
+                "SELECT " +
+                    "$ПутевойЛист.Грузчик as Loader, " +
+                    "$ПутевойЛист.Укладчик as Placer, " +
+                    "$ПутевойЛист.Укладчик2 as Placer2, " +
+                    "$ПутевойЛист.Укладчик3 as Placer3 " +
+                "FROM DH$ПутевойЛист as PL (nolock) " +
+                    "INNER JOIN _1sjourn as journ (nolock) " +
+                        "ON journ.iddoc = PL.iddoc " +
+                "WHERE " +
+                    "PL.$ПутевойЛист.Дата2 = :EmptyDate " +
+                    "and journ.ismark = 0 " +
+                    "and journ.iddoc = :iddoc " +
+                    "and ($ПутевойЛист.Грузчик = :EmptyLoader " +
+                    "or $ПутевойЛист.Укладчик = :EmptyLoader " +
+                    "or $ПутевойЛист.Укладчик2 = :EmptyLoader " +
+                    "or $ПутевойЛист.Укладчик3 = :EmptyLoader )" +
+                "ORDER BY journ.date_time_iddoc";
+                QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
+                QuerySetParam(ref TextQuery, "iddoc", WayBill.ID);
+                QuerySetParam(ref TextQuery, "EmptyLoader", GetVoidID());
+                
+                if (!ExecuteWithRead(TextQuery, out DT))
+                {
+                    return false;
+                }
+                if (DT.Rows.Count == 0)
+                {
+                    FExcStr = "Путевой закрыт, удален или укомплектован сотрудникаим!";
+                    return false;
+                }
+
+                TextQuery =
+                   "UPDATE DH$ПутевойЛист " +
+                       "SET " +
+                           "$ПутевойЛист.Грузчик    = :Loader, " +
+                           "$ПутевойЛист.Укладчик   = :Placer_1, " +
+                           "$ПутевойЛист.Укладчик2  = :Placer_2, " +
+                           "$ПутевойЛист.Укладчик3  = :Placer_3 " +
+                       "WHERE " +
+                           "DH$ПутевойЛист .iddoc = :iddoc;";
+                bool findeEmpty = false;
+                if (DT.Rows[0]["Loader"].ToString() == GetVoidID())
+                {
+                    QuerySetParam(ref TextQuery, "Loader", Employer.ID);
+                    findeEmpty = true;
+                }
+                else
+                {
+                    QuerySetParam(ref TextQuery, "Loader", DT.Rows[0]["Loader"].ToString());
+                }
+                if (DT.Rows[0]["Placer"].ToString() == GetVoidID() && !findeEmpty)
+                {
+                    QuerySetParam(ref TextQuery, "Placer_1", Employer.ID);
+                    findeEmpty = true;
+                }
+                else
+                {
+                    QuerySetParam(ref TextQuery, "Placer_1", DT.Rows[0]["Placer"].ToString());
+                }
+                if (DT.Rows[0]["Placer2"].ToString() == GetVoidID() && !findeEmpty)
+                {
+                    QuerySetParam(ref TextQuery, "Placer_2", Employer.ID);
+                    findeEmpty = true;
+                }
+                else
+                {
+                    QuerySetParam(ref TextQuery, "Placer_2", DT.Rows[0]["Placer2"].ToString());
+                }
+                if (DT.Rows[0]["Placer3"].ToString() == GetVoidID() && !findeEmpty)
+                {
+                    QuerySetParam(ref TextQuery, "Placer_3", Employer.ID);
+                    findeEmpty = true;
+                }
+                else
+                {
+                    QuerySetParam(ref TextQuery, "Placer_3", DT.Rows[0]["Placer3"].ToString());
+                }
+                QuerySetParam(ref TextQuery, "iddoc", WayBill.ID);
+                if (!findeEmpty)
+                {
+                    //все строки заполнены и нас там нет облом
+                    FExcStr = "Этот путевой уже укомплектован сотрудникаим!";
+                    return false;
+                }
+                               
             }
+            else
+            {
+                TextQuery =
+                    "UPDATE DH$ПутевойЛист " +
+                        "SET " +
+                            "$ПутевойЛист.Грузчик   = :Loader, " +
+                            "$ПутевойЛист.Укладчик  = :Placer, " +
+                            "$ПутевойЛист.Дата1     = :Date1, " +
+                            "$ПутевойЛист.Время1    = :Time1 " +
+                        "WHERE " +
+                            "DH$ПутевойЛист .iddoc = :iddoc;";
+                //"select @@rowcount as result;";
 
-            TextQuery = 
-                "UPDATE DH$ПутевойЛист " +
-                    "SET " + 
-                        "$ПутевойЛист.Грузчик   = :Loader, " +
-                        "$ПутевойЛист.Укладчик  = :Placer, " +
-                        "$ПутевойЛист.Дата1     = :Date1, " +
-                        "$ПутевойЛист.Время1    = :Time1 " +
-                    "WHERE " +
-                        "DH$ПутевойЛист .iddoc = :iddoc;";
-                 //"select @@rowcount as result;";
-
-            QuerySetParam(ref TextQuery, "Loader",      Employer.ID);
-            QuerySetParam(ref TextQuery, "Placer",      (Placer.Selected ? Placer.ID : GetVoidID()));
-            QuerySetParam(ref TextQuery, "Date1",       DateTime.Now);
-            QuerySetParam(ref TextQuery, "Time1",       APIManager.NowSecond());
-            QuerySetParam(ref TextQuery, "iddoc",       WayBill.ID);
-            QuerySetParam(ref TextQuery, "EmptyDate",   GetVoidDate());
-
+                QuerySetParam(ref TextQuery, "Loader", Employer.ID);
+                QuerySetParam(ref TextQuery, "Placer", (Placer.Selected ? Placer.ID : GetVoidID()));
+                QuerySetParam(ref TextQuery, "Date1", DateTime.Now);
+                QuerySetParam(ref TextQuery, "Time1", APIManager.NowSecond());
+                QuerySetParam(ref TextQuery, "iddoc", WayBill.ID);
+                QuerySetParam(ref TextQuery, "EmptyDate", GetVoidDate());
+            }
             if (!ExecuteWithoutRead(TextQuery))
             {
                 return false;
@@ -8140,8 +6256,9 @@ namespace WPM
 
             if (!ToModeLoading(WayBill.ID))
             {
-                LockoutDoc(WayBill.ID);
-                return false;
+                //временно отключено с релиза 4.47
+                //LockoutDoc(WayBill.ID);
+                //return false;
             }
 
             return true;
@@ -8153,7 +6270,21 @@ namespace WPM
             string idClaim = "   " + Translation.DecTo36(GetSynh("ПретензияОтКлиента"));
             idClaim = idClaim.Substring(idClaim.Length - 4);
 
-            string TextQuery = 
+            //проверим чек погрузки
+            string TextQuery =
+            "select DocWayBill.$ПутевойЛист.ЧекПогрузка " +
+            "from DH$ПутевойЛист as DocWayBill (nolock) " +
+            "where " +
+                "DocWayBill.iddoc = :iddoc ";
+            QuerySetParam(ref TextQuery, "iddoc", WayBill.ID);
+            if (Int32.Parse(ExecuteScalar(TextQuery).ToString()) == 0)
+            {
+                //погрузка не разрешена
+                FExcStr = "Погрузка запрещена!";
+                return false;
+            }  
+
+            TextQuery = 
                 "SELECT " + 
                     "Main.DocFull as DocFull " + 
                 "FROM (" + GiveSomeOneQueryText() + 
@@ -8196,13 +6327,17 @@ namespace WPM
             {
                 return false;
             }
-
-            LockoutDoc(WayBill.ID);
+            //временно отключим блокировку с релиза 4.47
+            //LockoutDoc(WayBill.ID);
             //Есл команда ниже вернет false - то наступит не меньший пиздец, чем описанный где-то в похожем комменте...
             BadDoc = new StrictDoc();
             return ToModeChoiseWork(Employer.IDD);
         }
 
+        public bool RepreshLodading()
+        {
+            return ToModeLoading(WayBill.ID);
+        }
         #endregion
 
         public bool GetCCForIDPlace(string ID, out string IDD)
