@@ -774,6 +774,8 @@ namespace WPM
                         return false;
                     }
                     string ID;
+                    string TextQuery;
+                    DataTable DT;                        
                     Dictionary<string, object> DataMap;
                     if (!GetSCData(IDDorID, "Секции", "ID,DESCR", out DataMap, false))
                     //if (!GetSC(IDDorID, "Секции", out ID))
@@ -789,7 +791,61 @@ namespace WPM
                             return false;
                         }
                     }
-                    string TextQuery =
+                    else
+                    {
+                        //нужно проверить зону ворот, к тем ли воротам он относится
+                        TextQuery =
+                        "Select " +
+                            "Zone.$Спр.ЗоныВорот.Секция as Section, " +
+                            "Gate.descr as Gate " +
+                        "from $Спр.МестаПогрузки as Ref (nolock) " +
+                        "inner join DH$КонтрольНабора as DocCC (nolock) " +
+                            "on DocCC.iddoc = Ref.$Спр.МестаПогрузки.КонтрольНабора " +
+                        "inner join DH$КонтрольРасходной as DocCB (nolock) " +
+                            "on DocCB.iddoc = DocCC.$КонтрольНабора.ДокументОснование " +
+                        "inner join $Спр.Ворота as Gate (nolock) " +
+                            "on Gate.id = DocCB.$КонтрольРасходной.Ворота " +
+                        "inner join $Спр.ЗоныВорот as Zone (nolock) " +
+                            "on Gate.id = Zone.parentext " +
+                        "where Ref.id = :id";
+                        QuerySetParam(ref TextQuery, "id", ScaningBox);
+                        if (!ExecuteWithRead(TextQuery, out DT))
+                        {
+                            return false;
+                        }
+                        if (DT.Rows.Count > 0)
+                        {
+                            //зона задана, надо проверять адреса
+                            bool findAdres = false;
+                            try
+                            {
+                                //попробуем по быстрому
+                                DataRow[] DR;
+                                DR = DT.Select("Section = '" + ID + "'");
+                                findAdres = DR.Length > 0;
+                            }
+                            catch
+                            {
+                                //ен получилось будем по долгому
+                                foreach (DataRow DR in DT.Rows)
+                                {
+                                    if (ID == DR["Section"].ToString())
+                                    {
+                                        findAdres = true;
+                                        break;
+                                    }
+                                }
+
+                            }
+                            if (!findAdres)
+                            {
+                                //нет такого адреса в зоне
+                                FExcStr = "Нужен адрес из зоны " + DT.Rows[0]["Gate"].ToString().Trim();
+                                return false;
+                            }
+                        }
+                    }
+                    TextQuery =
                         "declare @res int; " +
                         "begin tran; " +
                         "exec WPM_CompleteBox :box, :adress, @res output; " +
@@ -797,7 +853,6 @@ namespace WPM
                         "select @res as result; ";
                     QuerySetParam(ref TextQuery, "box", ScaningBox);
                     QuerySetParam(ref TextQuery, "adress", ID);
-                    DataTable DT;
                     if (!ExecuteWithRead(TextQuery, out DT))
                     {
                         return false;

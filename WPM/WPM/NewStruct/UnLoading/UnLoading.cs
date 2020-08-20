@@ -25,6 +25,7 @@ namespace WPM
         public StructBox DocCC;
         public ActionSet CurrentAction;
         public string PreviousAction;
+        public Doc DocUnload;
         
         /// <summary>
         /// 
@@ -40,6 +41,7 @@ namespace WPM
             //Просто
             AdressUnLoad = new RefSection(SS);
             BoxUnLoad = new RefBox(SS);
+            DocUnload = new Doc(SS);
             DocCC = new StructBox();
             PreviousAction = "";
         } // RefillSet (constructor)
@@ -93,14 +95,26 @@ namespace WPM
                 RefSection Section = e.Ref as RefSection;
                 AdressUnLoad.FoundID(Section.ID);
                 string TextQuery =
-                     "UPDATE $Спр.МестаПогрузки " +
-                     "SET " +
-                        "$Спр.МестаПогрузки.Адрес9 = :AdressID ," +
-                        "$Спр.МестаПогрузки.Сотрудник8 = :EmployerID ," +
-                        "$Спр.МестаПогрузки.Дата9 = :Date ," +
-                        "$Спр.МестаПогрузки.Время9 = :Time " +
-                     "WHERE $Спр.МестаПогрузки .id = :ID ";
-                SQL1S.QuerySetParam(ref TextQuery, "ID",            BoxUnLoad.ID);
+                         "UPDATE $Спр.МестаПогрузки " +
+                         "SET " +
+                            "$Спр.МестаПогрузки.Адрес9 = :AdressID ," +
+                            "$Спр.МестаПогрузки.Сотрудник8 = :EmployerID ," +
+                            "$Спр.МестаПогрузки.Дата9 = :Date ," +
+                            "$Спр.МестаПогрузки.Время9 = :Time " +
+                            "WHERE  ";
+                if (DocUnload.Selected)
+                {
+
+                    TextQuery += " $Спр.МестаПогрузки .КонтрольНабора = :DocUnload ";
+                    SQL1S.QuerySetParam(ref TextQuery, "DocUnload", DocUnload.ID);
+                
+                }
+                else
+                {
+                    TextQuery += " $Спр.МестаПогрузки .ID = :ID ";
+                    SQL1S.QuerySetParam(ref TextQuery, "ID", BoxUnLoad.ID);
+                
+                }
                 SQL1S.QuerySetParam(ref TextQuery, "AdressID",      AdressUnLoad.ID);
                 SQL1S.QuerySetParam(ref TextQuery, "EmployerID",    Employer.ID);
                 SQL1S.QuerySetParam(ref TextQuery, "Date",          DateTime.Now);
@@ -128,12 +142,58 @@ namespace WPM
             RefBox Box = e.Ref as RefBox;
 
             BoxUnLoad.FoundID(Box.ID);
+            DocUnload = new Doc(SS);
             CurrentAction = ActionSet.ScanAdress;
             AdressUnLoad = new RefSection(SS);
             Refresh();
 
         }
-        
+
+        protected override void ReactionDocDo(Doc doc)
+        {
+            if (CurrentAction != ActionSet.ScanBox)
+            {
+                Negative("Неверно! " + SS.WhatUNeed(CurrentAction));
+                return;
+
+            }
+            if (doc.TypeDoc == "КонтрольНабора")
+            {
+                //нам нужны все места этого документа, запомним документ и найдем первое место
+                DocUnload.FoundID(doc.ID);
+                string TextQuery =
+                     "SELECT TOP 1 Ref.ID as ID " +
+                     "FROM " +
+                        "$Спр.МестаПогрузки as Ref (nolock) " +
+                     "WHERE " +
+                        "$Спр.МестаПогрузки.КонтрольНабора = :DocUnload ";
+                SQL1S.QuerySetParam(ref TextQuery, "DocUnload", DocUnload.ID);
+                DataTable DT;
+                if (!SS.ExecuteWithRead(TextQuery, out DT))
+                {
+                    Negative("Ошибка запроса! " + SS.WhatUNeed(CurrentAction));
+                    return;
+                }
+
+                if (DT.Rows.Count == 0)
+                {
+                    Negative("Не найдено место! " + SS.WhatUNeed(CurrentAction));
+                    return;
+                }
+                BoxUnLoad.FoundID(DT.Rows[0]["ID"].ToString());
+                CurrentAction = ActionSet.ScanAdress;
+                AdressUnLoad = new RefSection(SS);
+                Refresh();
+
+            }
+            else
+            {
+                Negative("Неверно! " + SS.WhatUNeed(CurrentAction));
+                return;
+            }
+
+            base.ReactionDocDo(doc);
+        }
         /// <summary>
         /// 
         /// </summary>

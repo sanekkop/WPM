@@ -883,6 +883,7 @@ namespace WPM
             Label lblKey2       = pnlCurrent.GetLabelByName("lblKey2");
             dgRoute.DataSource       = SS.CCRP;
             lblKey1.Visible = SS.LastGoodAdress == null ? false : true;
+            lblAction.Text = SS.ExcStr;
             //очередная ебливая заглушка
             if (TimerFind.Enabled)
             {
